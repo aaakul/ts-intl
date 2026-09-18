@@ -1,0 +1,101 @@
+---
+title: "Web Intl 格式化器"
+description: "基于 Web Intl API 的类型安全封装与实例缓存格式化器。"
+order: 5
+lang: "zh-Hans"
+---
+
+# Web Intl 格式化器
+
+频繁创建 `Intl.NumberFormat` 或 `Intl.DateTimeFormat` 实例会产生不必要的性能开销。`ts-intl` 封装了 Web 标准 Intl API，并提供内置的实例缓存机制。
+
+## 获取格式化器实例
+
+### 方式 1：通过 `createI18n` 获取 `getFormatter`（推荐）
+
+该方式直接继承在全局配置中预设的格式规则、时区及错误处理配置：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+export const { getTranslations, getFormatter } = createI18n({
+  defaultLanguage: "zh-Hans",
+  formats: {
+    number: {
+      cny: { style: "currency", currency: "CNY" },
+      compact: { notation: "compact" },
+    },
+    dateTime: {
+      short: { dateStyle: "short" },
+    },
+  },
+  messages: {
+    "zh-Hans": {},
+  },
+});
+
+const formatter = getFormatter("zh-Hans");
+```
+
+### 方式 2：独立调用 `createFormatter(options)`
+
+适用于不依赖完整 i18n 实例的独立组件或工具模块：
+
+```ts
+import { createFormatter } from "@aaakul/ts-intl";
+
+const formatter = createFormatter({
+  locale: "zh-Hans",
+  formats: {
+    number: { cny: { style: "currency", currency: "CNY" } },
+  },
+});
+```
+
+## 核心格式化功能
+
+### 数字与货币格式化
+
+```ts
+formatter.number(1234567.89);
+// "1,234,567.89"
+
+formatter.number(888.8, "cny");
+// "¥888.80"
+
+formatter.number(1200000, "compact");
+// "120万"
+```
+
+### 日期与时间
+
+```ts
+formatter.dateTime(new Date(), { dateStyle: "full" });
+// "2026年9月18日星期五"
+
+formatter.dateTimeRange(new Date("2026-09-01"), new Date("2026-09-05"));
+// "2026/9/1 – 2026/9/5"
+```
+
+### 相对时间计算
+
+根据时间差自动匹配时间单位：
+
+```ts
+const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+formatter.relativeTime(twoHoursAgo);
+// "2小时前"
+```
+
+### 列表与本地化名称展示
+
+```ts
+formatter.list(["苹果", "香蕉", "橙子"]);
+// "苹果、香蕉和橙子"
+
+formatter.displayName("ja-JP", { type: "language" });
+// "日语（日本）"
+
+formatter.displayName("ja", { type: "language" });
+// "日语"
+```

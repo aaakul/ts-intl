@@ -1,0 +1,41 @@
+---
+import { getCollection, render } from "astro:content";
+import DocsLayout from "@/layouts/DocsLayout.astro";
+import type { SupportedLanguage } from "@/i18n";
+
+export async function getStaticPaths() {
+  const docs = await getCollection("docs");
+  return docs.map((entry) => {
+    // entry.id format: "en-US/overview-and-installation"
+    const cleanId = entry.id.replace(/\.mdx?$/, "");
+    const [, ...slugParts] = cleanId.split("/");
+    const slug = slugParts.join("/");
+    return {
+      params: {
+        lang: entry.data.lang,
+        slug,
+      },
+      props: {
+        entry,
+      },
+    };
+  });
+}
+
+const { entry } = Astro.props;
+const { lang, slug } = Astro.params as {
+  lang: SupportedLanguage;
+  slug: string;
+};
+const { Content, headings } = await render(entry);
+---
+
+<DocsLayout
+  title={`${entry.data.title}`}
+  description={entry.data.description}
+  lang={lang}
+  currentSlug={slug}
+  headings={headings}
+>
+  <Content />
+</DocsLayout>

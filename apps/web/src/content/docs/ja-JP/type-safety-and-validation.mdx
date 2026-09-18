@@ -1,0 +1,105 @@
+---
+title: "型安全性とバリデーション"
+description: "コンパイル時キー検査、パラメータ制約、辞書スキーマ検証。"
+order: 2
+lang: "ja-JP"
+---
+
+# 型安全性とバリデーション
+
+`ts-intl` は TypeScript の型システムを活用し、存在しないキー、タイポ、パラメータ欠落をコンパイル時に検知します。
+
+## キー検証と自動補完
+
+名前空間スコープまたはドット区切りのルート翻訳関数のいずれでも、IDE が自動補完と型検証を提供します：
+
+```ts
+const tCommon = getTranslations("ja-JP", "common");
+tCommon("title"); // 自動補完: "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_typo");
+```
+
+ルートトランスレーターのドット記法：
+
+```ts
+const tRoot = getTranslations("ja-JP");
+tRoot("common.title"); // 補完: "common.title" | "common.greeting" | ...
+```
+
+## パラメータ制約
+
+テンプレートに変数が含まれる場合はパラメータオブジェクトの引き渡しが必須となり、含まれない場合は引数が禁止されます：
+
+```ts
+const t = getTranslations("ja-JP", "common");
+
+// 変数なし：引数不可
+t("title");
+
+// 変数あり：引数必須
+t("greeting", { name: "田中" });
+
+// @ts-expect-error 必須パラメータ { name: string } が不足しています
+t("greeting");
+```
+
+## 明示的なパラメータ型アノテーション
+
+TypeScript 辞書内では、`{name:type}` 構文で明示的な型指定が可能です（サポート型: `string`, `number`, `Date`）：
+
+```ts
+export default {
+  status:
+    "ユーザー {name: string} が {timestamp: Date} にログインしました。合計: {total: number}",
+} as const;
+```
+
+TypeScript は呼び出し側の引数型をチェックします：
+
+```ts
+const t = getTranslations("ja-JP");
+
+t("status", {
+  name: "田中",
+  timestamp: new Date(),
+  total: 100,
+});
+
+// @ts-expect-error 型 'string' を型 'number' に割り当てることはできません
+t("status", { name: "田中", timestamp: new Date(), total: "100" });
+```
+
+## 多言語辞書の構造整合性（Schema Alignment）
+
+`defaultLanguage` の辞書をベースラインとして、`messages` に設定された他の言語は同一のキー構造を持つ必要があります：
+
+- 他言語でキーが欠落している場合、初期化箇所で型エラーとなります。
+- 未知のキーが含まれている場合も型エラーとなります。
+- 変数名（`{count}` など）も全言語間で一致させる必要があります。
+
+```ts
+const jaJP = {
+  welcome: "ようこそ、{user: string}さん！",
+} as const;
+
+const enUS = {
+  // @ts-expect-error 'welcome' キーが不足しています
+  farewell: "Goodbye",
+} as const;
+
+createI18n({
+  defaultLanguage: "ja-JP",
+  messages: { "ja-JP": jaJP, "en-US": enUS },
+});
+```
+
+## ランタイム辞書バリデーション
+
+開発モード（非本番環境）において、`createI18n` は初期化時に軽量なチェックを実行します：
+
+- キー名にドット `.`（パス解決予約記号）が含まれていないか検証。
+- 構造の不整合を `onError` 経由で警告。
+
+本番ビルド時にはこのチェックはスキップされ、実行時オーバーヘッドは発生しません。

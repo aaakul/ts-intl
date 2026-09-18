@@ -1,0 +1,121 @@
+---
+title: "フレームワーク統合とベストプラクティス"
+description: "Astro、React、Vue、Svelte、Node.js への統合とエラーハンドリング設定。"
+order: 6
+lang: "ja-JP"
+---
+
+# フレームワーク統合とベストプラクティス
+
+`ts-intl` は特定の UI フレームワークに依存しないため、各種フロントエンドおよびバックエンド環境に統合できます。
+
+## Astro での利用
+
+静的サイト生成（SSG）や SSR において、ページ生成サイクル内で直接型安全な翻訳関数を取得できます：
+
+```astro
+---
+// src/pages/[lang]/index.astro
+import { getTranslations } from "@/i18n";
+
+const { lang } = Astro.params;
+const t = getTranslations(lang as any, "home");
+---
+
+<section>
+  <h1>{t("hero.title")}</h1>
+  <p>{t("hero.subtitle")}</p>
+</section>
+```
+
+## React / Next.js
+
+```tsx
+import React from "react";
+import { getTranslations } from "@/i18n";
+
+export function Header({ locale }: { locale: "ja-JP" | "en-US" }) {
+  const t = getTranslations(locale, "nav");
+  return (
+    <nav>
+      <a href="/docs">{t("docs")}</a>
+      <a href="/pricing">{t("pricing")}</a>
+    </nav>
+  );
+}
+```
+
+## Vue 3
+
+```vue
+<script setup lang="ts">
+import { getTranslations } from "@/i18n";
+
+const props = defineProps<{ locale: "ja-JP" | "en-US" }>();
+const t = getTranslations(props.locale, "dashboard");
+</script>
+
+<template>
+  <main>
+    <h2>{{ t("title") }}</h2>
+  </main>
+</template>
+```
+
+## Svelte 5
+
+```svelte
+<script lang="ts">
+  import { getTranslations } from "$lib/i18n";
+
+  let { locale = "ja-JP" } = $props();
+  const t = getTranslations(locale, "common");
+</script>
+
+<button>{t("saveChanges")}</button>
+```
+
+## エラーハンドリングとフォールバック
+
+開発中や本番運用時の未翻訳検知フック：
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "ja-JP",
+  messages: { "ja-JP": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] 翻訳キー "${error.key}" が言語 "${error.lang}" に存在しません`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[未翻訳: ${key}]`;
+  },
+});
+```
+
+## API リファレンス一覧
+
+### `createI18n` の返り値
+
+| プロパティ / メソッド               | 型                  | 説明                                               |
+| :---------------------------------- | :------------------ | :------------------------------------------------- |
+| `getTranslations(lang, namespace?)` | `Function (t)`      | 指定した言語と名前空間に対応する翻訳関数を返します |
+| `getFormatter(lang?)`               | `Formatter`         | キャッシュされた Web Intl フォーマッターを返します |
+| `isSupportedLanguage(lang)`         | `boolean`           | サポート言語判定の型ガード関数                     |
+| `languages`                         | `readonly string[]` | 設定されたサポート言語コードの配列                 |
+| `defaultLanguage`                   | `string`            | デフォルトの基準言語コード                         |
+
+### トランスレーターメソッド (`t`)
+
+| メソッド                           | 戻り値の型        | 説明                                         |
+| :--------------------------------- | :---------------- | :------------------------------------------- |
+| `t(key, params?, formats?)`        | `string`          | プレーンテキストの整形とパラメータ補間       |
+| `t.rich(key, params?, formats?)`   | `(string \| R)[]` | XML 風タグをコンポーネントツリーへマッピング |
+| `t.markup(key, params?, formats?)` | `string`          | 安全な HTML 文字列を生成                     |
+| `t.raw(key)`                       | `Exact / any`     | 辞書内のオブジェクトや配列をそのまま取得     |
+| `t.has(key)`                       | `boolean`         | 警告を出さずにキーの存在を確認               |

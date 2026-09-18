@@ -1,0 +1,71 @@
+---
+title: "命名空间与作用域"
+description: "通过命名空间组织翻译字典与数据提取方式。"
+order: 3
+lang: "zh-Hans"
+---
+
+# 命名空间与作用域
+
+按功能模块或页面组织翻译词条，可以避免键名冲突，并简化调用路径。
+
+## 局部作用域翻译器
+
+在调用 `getTranslations` 时传入第二个参数作为命名空间，返回限定在该命名空间作用域下的翻译函数：
+
+```ts
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "实时监控指标",
+      refresh: "刷新数据",
+    },
+  },
+} as const;
+
+// 绑定到多级嵌套命名空间
+const t = getTranslations("zh-Hans", "admin.dashboard");
+
+t("metrics"); // "实时监控指标"
+t("refresh"); // "刷新数据"
+```
+
+## 全局扁平翻译器
+
+若省略命名空间参数，`getTranslations` 返回根翻译器，支持通过点分隔路径访问嵌套键：
+
+```ts
+const t = getTranslations("zh-Hans");
+
+t("admin.dashboard.metrics"); // "实时监控指标"
+```
+
+## 提取原始数据 `t.raw()`
+
+需要直接获取配置对象或数组等原始结构时，可以使用 `t.raw()`：
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("zh-Hans");
+
+const endpoints = t.raw("config.endpoints");
+// 推导类型: readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## 检查键是否存在 `t.has()`
+
+检测指定键在当前语言或回退语言中是否存在，不会触发缺失键警告：
+
+```ts
+const t = getTranslations("zh-Hans", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

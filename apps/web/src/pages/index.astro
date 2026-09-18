@@ -1,0 +1,30 @@
+---
+import { SITE_CONFIG } from "@/config/site";
+
+// Completely static root redirect to default language (/en-US)
+const canonicalUrl = new URL("/en-US", Astro.site ?? SITE_CONFIG.url).href;
+---
+
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting to ts-intl (English)...</title>
+    <meta http-equiv="refresh" content="0;url=/en-US" />
+    <link rel="canonical" href={canonicalUrl} />
+    <script is:inline>
+      window.location.replace("/en-US");
+    </script>
+  </head>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    body {
+      margin: 0;
+      background-color: Canvas;
+      color: CanvasText;
+    }
+  </style>
+  <body></body>
+</html>

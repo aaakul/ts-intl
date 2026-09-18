@@ -1,0 +1,110 @@
+---
+import Icon from "./Icon.astro";
+import { docChapters } from "@/lib/docs";
+import type { SupportedLanguage } from "@/i18n";
+import { getTranslations } from "@/i18n";
+
+interface Props {
+  lang: SupportedLanguage;
+  currentSlug: string;
+}
+
+const { lang, currentSlug } = Astro.props;
+const t = getTranslations(lang, "docs");
+const currentChapter =
+  docChapters.find((ch) => ch.slug === currentSlug) || docChapters[0];
+---
+
+<!-- Mobile: Compact Collapsible Chapter Selector -->
+<details
+  class="md:hidden w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/60 group text-xs mb-2"
+>
+  <summary
+    class="flex items-center justify-between px-3.5 py-2.5 cursor-pointer select-none font-medium text-neutral-800 dark:text-neutral-200 list-none"
+  >
+    <div class="flex items-center gap-2 truncate">
+      <span class="text-neutral-500 dark:text-neutral-400"
+        >{t("chapters")}:</span
+      >
+      <span class="font-semibold text-neutral-950 dark:text-white truncate">
+        {currentChapter.title[lang]}
+      </span>
+    </div>
+    <Icon
+      name="chevron-down"
+      class="w-4 h-4 text-neutral-400 group-open:rotate-180 transition-transform shrink-0 ml-2"
+    />
+  </summary>
+
+  <nav
+    class="p-2 pt-1 space-y-1 border-t border-neutral-200 dark:border-neutral-800"
+  >
+    {
+      docChapters.map((ch) => {
+        const isActive = ch.slug === currentSlug;
+        return (
+          <a
+            href={`/${lang}/docs/${ch.slug}`}
+            class={`flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors ${
+              isActive
+                ? "bg-neutral-200/70 dark:bg-neutral-800 text-neutral-950 dark:text-white font-semibold"
+                : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-neutral-200"
+            }`}
+          >
+            <span class="truncate">{ch.title[lang]}</span>
+            <span
+              class={`text-xs tabular-nums ${isActive ? "text-neutral-900 dark:text-white font-medium" : "text-neutral-400 dark:text-neutral-600"}`}
+            >
+              0{ch.order}
+            </span>
+          </a>
+        );
+      })
+    }
+  </nav>
+</details>
+
+<!-- Desktop: Sticky Left Sidebar -->
+<aside
+  class="hidden md:block w-64 shrink-0 md:sticky md:top-20 md:self-start md:max-h-[calc(100vh-6rem)] md:overflow-y-auto pr-6"
+>
+  <div
+    class="mb-3 text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-semibold"
+  >
+    {t("chapters")}
+  </div>
+
+  <nav class="space-y-1">
+    {
+      docChapters.map((ch) => {
+        const isActive = ch.slug === currentSlug;
+        return (
+          <a
+            href={`/${lang}/docs/${ch.slug}`}
+            class={`group flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors ${
+              isActive
+                ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-950 dark:text-white font-medium border-l-2 border-neutral-900 dark:border-white"
+                : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900/60 hover:text-neutral-900 dark:hover:text-neutral-200"
+            }`}
+          >
+            <span class="truncate">{ch.title[lang]}</span>
+            <span
+              class={`text-xs tabular-nums ${isActive ? "text-neutral-900 dark:text-white font-medium" : "text-neutral-400 dark:text-neutral-600"}`}
+            >
+              0{ch.order}
+            </span>
+          </a>
+        );
+      })
+    }
+  </nav>
+</aside>
+
+<style>
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary {
+    list-style: none;
+  }
+</style>

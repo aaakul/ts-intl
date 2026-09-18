@@ -1,0 +1,105 @@
+---
+title: "Type Safety & Validation"
+description: "Compile-time type checking, parameter constraints, and dictionary validation."
+order: 2
+lang: "en-US"
+---
+
+# Type Safety & Validation
+
+`ts-intl` uses TypeScript's type system to check for nonexistent keys, missing parameters, and dictionary schema mismatches at compile time.
+
+## Key Checking & Autocomplete
+
+Whether calling `t` with a namespace scope or a root translator with dot notation, TypeScript validates each key:
+
+```ts
+const tCommon = getTranslations("en-US", "common");
+tCommon("title"); // Autocomplete: "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_misspelled");
+```
+
+When using a root-level translator:
+
+```ts
+const tRoot = getTranslations("en-US");
+tRoot("common.title"); // Autocomplete: "common.title" | "common.greeting" | ...
+```
+
+## Parameter Constraints
+
+If a translation string defines placeholders, passing the parameter object is mandatory:
+
+```ts
+const t = getTranslations("en-US", "common");
+
+// No placeholders: parameters are forbidden
+t("title");
+
+// Has placeholder: parameters are required
+t("greeting", { name: "Alice" });
+
+// @ts-expect-error Missing required argument: { name: string }
+t("greeting");
+```
+
+## Explicit Parameter Type Annotations
+
+Placeholders support explicit type annotations using `{name:type}` syntax. Supported scalar types: `string`, `number`, and `Date`.
+
+```ts
+export default {
+  status:
+    "User {name: string} logged in at {timestamp: Date}. Total: {total: number}",
+} as const;
+```
+
+TypeScript validates caller argument types against these declarations:
+
+```ts
+const t = getTranslations("en-US");
+
+t("status", {
+  name: "Alice",
+  timestamp: new Date(),
+  total: 42,
+});
+
+// @ts-expect-error Type 'string' is not assignable to type 'number'
+t("status", { name: "Alice", timestamp: new Date(), total: "42" });
+```
+
+## Cross-Language Schema Alignment
+
+The `defaultLanguage` dictionary serves as the baseline schema. Every other language passed to `messages` must mirror its structure:
+
+- Missing keys in secondary languages generate compilation errors.
+- Extraneous keys not present in the default language trigger warnings.
+- Parameter names must match across languages (`{count}` in English requires `{count}` in Chinese and Japanese).
+
+```ts
+const enUS = {
+  welcome: "Welcome, {user: string}!",
+} as const;
+
+const zhHans = {
+  // @ts-expect-error Missing 'welcome' key
+  farewell: "再见",
+} as const;
+
+createI18n({
+  defaultLanguage: "en-US",
+  messages: { "en-US": enUS, "zh-Hans": zhHans },
+});
+```
+
+## Runtime Dictionary Validation
+
+In development mode, `createI18n` automatically verifies dictionary integrity on initialization:
+
+- Detects forbidden dots inside key names (which would cause path resolution collisions).
+- Alerts about structurally divergent language maps via `onError`.
+
+In production builds (`NODE_ENV === 'production'`), these validation checks are stripped, incurring no runtime performance overhead.

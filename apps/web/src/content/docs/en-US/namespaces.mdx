@@ -1,0 +1,72 @@
+---
+title: "Namespaces & Scoping"
+description: "Organizing translation keys using scoped namespaces and path navigation."
+order: 3
+lang: "en-US"
+---
+
+# Namespaces & Scoping
+
+Modularizing translations into distinct functional domains helps avoid key conflicts and simplifies paths in component code.
+
+## Scoped Translators
+
+Passing a namespace as the second argument to `getTranslations` returns a translation function scoped to that prefix:
+
+```ts
+// Dictionaries defined with nested objects
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "Live Statistics",
+      refresh: "Refresh Data",
+    },
+  },
+} as const;
+
+// Scope to nested namespace
+const t = getTranslations("en-US", "admin.dashboard");
+
+t("metrics"); // "Live Statistics"
+t("refresh"); // "Refresh Data"
+```
+
+## Root-Level Translators
+
+When omitting the namespace parameter, `getTranslations` produces a flat translator capable of traversing any dot-separated path in the dictionary:
+
+```ts
+const t = getTranslations("en-US");
+
+t("admin.dashboard.metrics"); // "Live Statistics"
+```
+
+## Extracting Raw Objects with `t.raw()`
+
+When a component requires structured configuration or lists rather than interpolated strings, use `t.raw()`:
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("en-US");
+
+const endpoints = t.raw("config.endpoints");
+// Inferred type: readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## Key Existence Checking with `t.has()`
+
+Check whether a key exists in the current dictionary without generating missing translation warnings:
+
+```ts
+const t = getTranslations("en-US", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

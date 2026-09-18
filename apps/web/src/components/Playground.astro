@@ -1,0 +1,493 @@
+---
+import { Code } from "astro:components";
+import Icon from "./Icon.astro";
+import { getTranslations, type SupportedLanguage } from "@/i18n";
+import { TEMPLATES } from "@/lib/playground/templates";
+
+interface Props {
+  lang: SupportedLanguage;
+}
+
+const { lang } = Astro.props;
+const t = getTranslations(lang, "playground");
+const initialTemplate = TEMPLATES[lang] || TEMPLATES["en-US"];
+
+const staticPreviews: Record<
+  SupportedLanguage,
+  {
+    title: string;
+    role: string;
+    bannerPrefix: string;
+    badgeText: string;
+    bannerSuffix: string;
+    cart: string;
+    invoice: string;
+    delivery: string;
+    btn: string;
+  }
+> = {
+  "zh-Hans": {
+    title: "你好，开发者！",
+    role: "专业版会员",
+    bannerPrefix: "限时促销：",
+    badgeText: "全场 8 折",
+    bannerSuffix: "",
+    cart: "购物车共有 3 件商品",
+    invoice: "结算总额：¥899.50",
+    delivery: "预计送达：2天后",
+    btn: "立即结算",
+  },
+  "en-US": {
+    title: "Hello, Alex!",
+    role: "Pro Member",
+    bannerPrefix: "Flash Sale: ",
+    badgeText: "20% OFF",
+    bannerSuffix: " on all items",
+    cart: "3 items in cart",
+    invoice: "Total: $129.99",
+    delivery: "Estimated delivery: in 2 days",
+    btn: "Checkout Now",
+  },
+  "ja-JP": {
+    title: "こんにちは、田中様！",
+    role: "Proメンバー",
+    bannerPrefix: "タイムセール：",
+    badgeText: "全品 20% OFF",
+    bannerSuffix: " 実施中！",
+    cart: "カート内に 3 件の商品",
+    invoice: "お支払い合計：¥15,800",
+    delivery: "お届け予定：2日後",
+    btn: "レジに進む",
+  },
+};
+
+const preview = staticPreviews[lang] || staticPreviews["en-US"];
+---
+
+<div
+  id="playground-root"
+  class="max-w-5xl mx-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm"
+  data-lang={lang}
+>
+  <div
+    class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-950/60 px-3 py-2 rounded-t-lg"
+  >
+    <div class="flex items-center gap-1.5" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        id="pg-tab-messages"
+        data-tab="messages"
+        aria-selected="true"
+        class="pg-tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-neutral-900 dark:text-white bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-xs"
+      >
+        {t("tabMessages")}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="pg-tab-app"
+        data-tab="app"
+        aria-selected="false"
+        class="pg-tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200"
+      >
+        {t("tabApp")}
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span
+        id="pg-status-badge"
+        class="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 hidden sm:inline"
+      >
+      </span>
+      <button
+        type="button"
+        id="pg-reset-btn"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+      >
+        <Icon name="rotate-ccw" class="w-3 h-3 text-neutral-400" />
+        <span>{t("reset")}</span>
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="grid grid-cols-1 lg:grid-cols-12 min-h-[380px] sm:min-h-[400px] relative rounded-b-lg"
+  >
+    <div
+      class="lg:col-span-7 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800 flex flex-col bg-white dark:bg-neutral-950 relative"
+    >
+      <div
+        id="pg-static-fallback"
+        class="w-full h-[380px] sm:h-[400px] overflow-auto p-4 font-mono text-xs bg-white dark:bg-neutral-950"
+      >
+        <Code
+          code={initialTemplate.messages}
+          lang="typescript"
+          theme="github-dark"
+        />
+      </div>
+
+      <div id="pg-editor-mount" class="w-full h-[380px] sm:h-[400px] hidden">
+      </div>
+    </div>
+
+    <div
+      class="lg:col-span-5 bg-neutral-50/50 dark:bg-neutral-950/40 p-4 sm:p-5 flex flex-col justify-center overflow-y-auto"
+    >
+      <div class="w-full">
+        <div class="flex items-center justify-between mb-3">
+          <span
+            class="text-[11px] font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium"
+          >
+            {t("previewTitle")}
+          </span>
+          <span
+            class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"
+          ></span>
+        </div>
+
+        <div id="pg-preview-mount" class="w-full">
+          <div class="demo-card">
+            <div class="demo-header">
+              <h3 class="demo-title">{preview.title}</h3>
+              <span class="demo-tag">{preview.role}</span>
+            </div>
+
+            <div class="demo-banner">
+              {preview.bannerPrefix && <span>{preview.bannerPrefix}</span>}
+              <strong class="demo-badge">{preview.badgeText}</strong>
+              {preview.bannerSuffix && <span>{preview.bannerSuffix}</span>}
+            </div>
+
+            <div class="demo-body">
+              <div class="demo-row">
+                <span class="demo-label">{preview.cart}</span>
+                <span class="demo-price">{preview.invoice}</span>
+              </div>
+              <div class="demo-subtext">
+                {preview.delivery}
+              </div>
+            </div>
+
+            <button class="demo-btn" type="button">
+              {preview.btn}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="pg-error-bar"
+        class="mt-3 p-3 rounded-md bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300 text-xs font-mono hidden"
+      >
+        <div class="font-bold mb-1">Error</div>
+        <div id="pg-error-text" class="break-all whitespace-pre-wrap"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  .demo-card {
+    border-radius: 0.5rem;
+    border: 1px solid #e5e5e5;
+    background-color: #ffffff;
+    padding: 1.15rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+  .dark .demo-card {
+    border-color: #262626;
+    background-color: #171717;
+  }
+
+  .demo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .demo-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #171717;
+    margin: 0;
+  }
+  .dark .demo-title {
+    color: #ffffff;
+  }
+
+  .demo-tag {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+  .dark .demo-tag {
+    background-color: #172554;
+    color: #93c5fd;
+    border-color: #1e40af;
+  }
+
+  .demo-banner {
+    margin-bottom: 0.875rem;
+    padding: 0.45rem 0.65rem;
+    border-radius: 0.375rem;
+    background-color: #fefce8;
+    color: #854d0e;
+    font-size: 0.75rem;
+    border: 1px solid #fef08a;
+  }
+  .dark .demo-banner {
+    background-color: rgba(69, 26, 3, 0.4);
+    color: #fef08a;
+    border-color: rgba(161, 98, 7, 0.4);
+  }
+
+  .demo-badge {
+    display: inline-block;
+    padding: 0 0.25rem;
+    border-radius: 0.25rem;
+    font-weight: 700;
+    background-color: #fde047;
+    color: #713f12;
+    margin-right: 0.25rem;
+  }
+  .dark .demo-badge {
+    background-color: #854d0e;
+    color: #fef9c3;
+  }
+
+  .demo-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+  }
+
+  .demo-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    color: #404040;
+  }
+  .dark .demo-row {
+    color: #d4d4d4;
+  }
+
+  .demo-price {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #171717;
+  }
+  .dark .demo-price {
+    color: #ffffff;
+  }
+
+  .demo-subtext {
+    font-size: 0.6875rem;
+    color: #737373;
+  }
+  .dark .demo-subtext {
+    color: #a3a3a3;
+  }
+
+  .demo-btn {
+    width: 100%;
+    padding: 0.55rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    background-color: #171717;
+    color: #ffffff;
+    border: none;
+    transition: background-color 0.15s ease;
+  }
+  .demo-btn:hover {
+    background-color: #262626;
+  }
+  .dark .demo-btn {
+    background-color: #ffffff;
+    color: #171717;
+  }
+  .dark .demo-btn:hover {
+    background-color: #f5f5f5;
+  }
+
+  /* Monaco JSX Syntax Highlighting */
+  .monaco-jsx-tag {
+    color: #4ec9b0 !important;
+  }
+  .monaco-jsx-component {
+    color: #4ec9b0 !important;
+    font-weight: 600;
+  }
+  .monaco-jsx-attr {
+    color: #9cdcfe !important;
+  }
+  .monaco-jsx-bracket {
+    color: #808080 !important;
+  }
+
+  :root:not(.dark) .monaco-jsx-tag {
+    color: #800000 !important;
+  }
+  :root:not(.dark) .monaco-jsx-component {
+    color: #267f99 !important;
+    font-weight: 600;
+  }
+  :root:not(.dark) .monaco-jsx-attr {
+    color: #e50000 !important;
+  }
+  :root:not(.dark) .monaco-jsx-bracket {
+    color: #800000 !important;
+  }
+
+  /* Monaco Overflow Widgets */
+  .monaco-editor .overflowingContentWidgets,
+  .monaco-hover,
+  .monaco-editor-hover {
+    z-index: 50 !important;
+  }
+
+  /* Playground code area font family (ensure sans-serif for Chinese characters) */
+  #pg-static-fallback,
+  #pg-static-fallback pre,
+  #pg-static-fallback code,
+  #pg-editor-mount,
+  .monaco-editor,
+  .monaco-editor .view-lines,
+  .monaco-editor .margin,
+  .monaco-editor .monaco-editor-hover {
+    font-family:
+      "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      "Liberation Mono", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB",
+      "Noto Sans SC", "WenQuanYi Micro Hei", sans-serif !important;
+  }
+</style>
+
+<script>
+  function setupHeroPlayground() {
+    const root = document.getElementById("playground-root");
+    if (!root) return;
+
+    const lang = root.getAttribute("data-lang") || "en-US";
+    const staticFallback = document.getElementById("pg-static-fallback");
+    const editorMount = document.getElementById("pg-editor-mount");
+    const previewMount = document.getElementById("pg-preview-mount");
+    const errorBar = document.getElementById("pg-error-bar");
+    const errorText = document.getElementById("pg-error-text");
+    const statusBadge = document.getElementById("pg-status-badge");
+    const resetBtn = document.getElementById("pg-reset-btn");
+    const tabMessages = document.getElementById("pg-tab-messages");
+    const tabApp = document.getElementById("pg-tab-app");
+
+    if (!editorMount || !previewMount || !errorBar || !errorText) return;
+    const em = editorMount;
+    const pm = previewMount;
+    const eb = errorBar;
+    const et = errorText;
+
+    let isInitialized = false;
+    let playgroundInstance: any = null;
+
+    function activatePlayground() {
+      if (isInitialized) return;
+      isInitialized = true;
+
+      import("@/lib/playground/engine")
+        .then(({ createPlayground }) => {
+          return createPlayground({
+            container: em,
+            previewContainer: pm,
+            errorContainer: eb,
+            errorText: et,
+            lang,
+            onReady() {
+              if (staticFallback) staticFallback.style.display = "none";
+              em.classList.remove("hidden");
+              if (statusBadge) statusBadge.textContent = "Ready";
+            },
+          });
+        })
+        .then((instance) => {
+          playgroundInstance = instance;
+
+          function switchTab(tab: "messages" | "app") {
+            if (!playgroundInstance) return;
+            playgroundInstance.setTab(tab);
+
+            const activeClasses = [
+              "text-neutral-900",
+              "dark:text-white",
+              "bg-white",
+              "dark:bg-neutral-800",
+              "border",
+              "border-neutral-200",
+              "dark:border-neutral-700",
+              "shadow-xs",
+            ];
+            const inactiveClasses = [
+              "text-neutral-500",
+              "dark:text-neutral-400",
+              "hover:text-neutral-900",
+              "dark:hover:text-neutral-200",
+            ];
+
+            if (tab === "messages") {
+              tabMessages?.classList.add(...activeClasses);
+              tabMessages?.classList.remove(...inactiveClasses);
+              tabMessages?.setAttribute("aria-selected", "true");
+
+              tabApp?.classList.remove(...activeClasses);
+              tabApp?.classList.add(...inactiveClasses);
+              tabApp?.setAttribute("aria-selected", "false");
+            } else {
+              tabApp?.classList.add(...activeClasses);
+              tabApp?.classList.remove(...inactiveClasses);
+              tabApp?.setAttribute("aria-selected", "true");
+
+              tabMessages?.classList.remove(...activeClasses);
+              tabMessages?.classList.add(...inactiveClasses);
+              tabMessages?.setAttribute("aria-selected", "false");
+            }
+          }
+
+          tabMessages?.addEventListener("click", () => switchTab("messages"));
+          tabApp?.addEventListener("click", () => switchTab("app"));
+
+          resetBtn?.addEventListener("click", () => {
+            if (playgroundInstance) playgroundInstance.reset();
+          });
+        })
+        .catch((err) => {
+          console.error("[playground] Activation error:", err);
+          if (statusBadge) statusBadge.textContent = "Offline";
+        });
+    }
+
+    root.addEventListener("mouseenter", activatePlayground, { once: true });
+    root.addEventListener("focusin", activatePlayground, { once: true });
+    tabMessages?.addEventListener("click", activatePlayground, { once: true });
+    tabApp?.addEventListener("click", activatePlayground, { once: true });
+
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(activatePlayground, {
+        timeout: 1200,
+      });
+    } else {
+      setTimeout(activatePlayground, 200);
+    }
+  }
+
+  setupHeroPlayground();
+  document.addEventListener("astro:after-swap", setupHeroPlayground);
+</script>

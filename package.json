@@ -1,72 +1,18 @@
 {
-  "name": "@aaakul/ts-intl",
+  "name": "ts-intl-monorepo",
   "version": "1.0.0",
-  "description": "A zero-dependency, framework-agnostic, strictly type-safe i18n library with a developer experience inspired by next-intl. ",
+  "private": true,
   "type": "module",
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/aaakul/ts-intl.git"
-  },
-  "homepage": "https://github.com/aaakul/ts-intl#readme",
-  "bugs": {
-    "url": "https://github.com/aaakul/ts-intl/issues"
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "sideEffects": false,
-  "files": [
-    "dist"
-  ],
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    }
-  },
+  "packageManager": "pnpm@12.4.2",
   "scripts": {
-    "dev": "tsup --watch",
-    "build": "tsup",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
-    "check": "npm run build && publint && attw --pack .",
-    "release": "bumpp && npm publish"
-  },
-  "keywords": [
-    "i18n",
-    "internationalization",
-    "localization",
-    "typescript",
-    "type-safe",
-    "zero-dependency",
-    "lightweight",
-    "icu",
-    "next-intl",
-    "framework-agnostic",
-    "react",
-    "vue",
-    "svelte",
-    "astro",
-    "nodejs"
-  ],
-  "license": "MIT",
-  "devDependencies": {
-    "@arethetypeswrong/cli": "^0.18.5",
-    "@types/node": "^22.20.2",
-    "bumpp": "^12.3.0",
-    "publint": "^0.2.12",
-    "tsup": "^8.3.0",
-    "typescript": "^5.5.0",
-    "vitest": "^5.0.0"
+    "build": "pnpm --filter \"@aaakul/ts-intl\" build && pnpm --filter web build",
+    "build:lib": "pnpm --filter \"@aaakul/ts-intl\" build",
+    "build:web": "pnpm --filter web build",
+    "dev": "pnpm --filter web dev",
+    "dev:lib": "pnpm --filter \"@aaakul/ts-intl\" dev",
+    "test": "pnpm --filter \"@aaakul/ts-intl\" test",
+    "test:watch": "pnpm --filter \"@aaakul/ts-intl\" test:watch",
+    "typecheck": "pnpm --filter \"@aaakul/ts-intl\" typecheck && pnpm --filter web check",
+    "check": "pnpm --filter \"@aaakul/ts-intl\" check"
   }
 }

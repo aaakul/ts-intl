@@ -1,0 +1,38 @@
+---
+import Icon from "./Icon.astro";
+
+interface Props {
+  className?: string;
+  label?: string;
+}
+
+const { className = "", label = "Toggle theme" } = Astro.props;
+---
+
+<button
+  type="button"
+  id="theme-toggle"
+  aria-label={label}
+  class={`p-2 rounded-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors ${className}`}
+>
+  <!-- Sun Icon (shown in dark mode) -->
+  <Icon name="sun" class="w-4 h-4 hidden dark:block" />
+
+  <!-- Moon Icon (shown in light mode) -->
+  <Icon name="moon" class="w-4 h-4 block dark:hidden" />
+</button>
+
+<script is:inline>
+  function setupThemeToggle() {
+    const toggleBtn = document.getElementById("theme-toggle");
+    if (toggleBtn) {
+      toggleBtn.onclick = () => {
+        const isDark = document.documentElement.classList.toggle("dark");
+        localStorage.setItem("theme", isDark ? "dark" : "light");
+      };
+    }
+  }
+
+  setupThemeToggle();
+  document.addEventListener("astro:after-swap", setupThemeToggle);
+</script>

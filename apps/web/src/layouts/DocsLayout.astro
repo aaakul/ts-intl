@@ -1,0 +1,240 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import Navbar from "@/components/Navbar.astro";
+import Footer from "@/components/Footer.astro";
+import DocsSidebar from "@/components/DocsSidebar.astro";
+import TableOfContents from "@/components/TableOfContents.astro";
+import { docChapters } from "@/lib/docs";
+import type { SupportedLanguage } from "@/i18n";
+import { getTranslations } from "@/i18n";
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  title: string;
+  description?: string;
+  lang: SupportedLanguage;
+  currentSlug: string;
+  headings: Heading[];
+}
+
+const { title, description, lang, currentSlug, headings } = Astro.props;
+const t = getTranslations(lang, "docs");
+
+const currentIndex = docChapters.findIndex((c) => c.slug === currentSlug);
+const prevChapter = currentIndex > 0 ? docChapters[currentIndex - 1] : null;
+const nextChapter =
+  currentIndex >= 0 && currentIndex < docChapters.length - 1
+    ? docChapters[currentIndex + 1]
+    : null;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang={lang}
+  canonicalPath={`/docs/${currentSlug}`}
+>
+  <Navbar lang={lang} currentSlug={currentSlug} isDocsPage={true} />
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
+    <div class="flex flex-col md:flex-row gap-6 md:gap-8 lg:gap-12">
+      <!-- Left Chapter Sidebar -->
+      <DocsSidebar lang={lang} currentSlug={currentSlug} />
+
+      <!-- Center MDX Document Content -->
+      <main class="flex-1 min-w-0 max-w-3xl">
+        <article class="doc-content">
+          <slot />
+        </article>
+
+        <!-- Previous / Next Chapter Buttons -->
+        <div
+          class="mt-12 pt-6 border-t border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-stretch justify-between gap-3 text-xs"
+        >
+          {
+            prevChapter ? (
+              <a
+                href={`/${lang}/docs/${prevChapter.slug}`}
+                class="group flex-1 flex flex-col p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 transition-colors"
+              >
+                <span class="text-neutral-500 dark:text-neutral-400 text-xs mb-1">
+                  &larr; {t("previousChapter")}
+                </span>
+                <span class="text-neutral-900 dark:text-white font-medium">
+                  {prevChapter.title[lang]}
+                </span>
+              </a>
+            ) : (
+              <div class="hidden sm:block flex-1" />
+            )
+          }
+
+          {
+            nextChapter ? (
+              <a
+                href={`/${lang}/docs/${nextChapter.slug}`}
+                class="group flex-1 flex flex-col text-left sm:text-right p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 transition-colors"
+              >
+                <span class="text-neutral-500 dark:text-neutral-400 text-xs mb-1">
+                  {t("nextChapter")} &rarr;
+                </span>
+                <span class="text-neutral-900 dark:text-white font-medium">
+                  {nextChapter.title[lang]}
+                </span>
+              </a>
+            ) : (
+              <div class="hidden sm:block flex-1" />
+            )
+          }
+        </div>
+      </main>
+
+      <!-- Right Headings TOC -->
+      <TableOfContents headings={headings} lang={lang} />
+    </div>
+  </div>
+
+  <Footer lang={lang} />
+</BaseLayout>
+
+<style is:global>
+  /* Minimalist typography for documentation */
+  .doc-content h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 1.25rem;
+  }
+
+  .doc-content h2 {
+    font-size: 1.375rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e5e5;
+    scroll-margin-top: 5rem;
+  }
+
+  .dark .doc-content h2 {
+    border-color: #262626;
+  }
+
+  .doc-content h3 {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+    scroll-margin-top: 5rem;
+  }
+
+  .doc-content h4 {
+    scroll-margin-top: 5rem;
+  }
+
+  .doc-content p {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+
+  .doc-content ul,
+  .doc-content ol {
+    padding-left: 1.25rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+
+  .doc-content ul {
+    list-style-type: disc;
+  }
+
+  .doc-content ol {
+    list-style-type: decimal;
+  }
+
+  .doc-content li {
+    margin-bottom: 0.25rem;
+  }
+
+  .doc-content blockquote {
+    padding-left: 1rem;
+    border-left: 3px solid #d4d4d4;
+    margin: 1.25rem 0;
+    font-size: 0.875rem;
+    color: #737373;
+  }
+
+  .dark .doc-content blockquote {
+    border-color: #404040;
+    color: #a3a3a3;
+  }
+
+  .doc-content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    margin: 1.5rem 0;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+
+  .doc-content th,
+  .doc-content td {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #e5e5e5;
+    text-align: left;
+  }
+
+  .dark .doc-content th,
+  .dark .doc-content td {
+    border-color: #262626;
+  }
+
+  .doc-content th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+  }
+
+  .dark .doc-content th {
+    background-color: #171717;
+  }
+
+  .doc-content a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: #a3a3a3;
+    transition: text-decoration-color 0.15s ease;
+  }
+
+  .doc-content a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /* Code blocks inside documentation */
+  .doc-content pre {
+    margin-top: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .doc-content pre + pre {
+    margin-top: 1.5rem;
+  }
+
+  .doc-content li > pre {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+</style>

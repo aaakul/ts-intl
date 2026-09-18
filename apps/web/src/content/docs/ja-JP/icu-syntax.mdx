@@ -1,0 +1,108 @@
+---
+title: "ICU 構文とリッチテキスト描画"
+description: "複数形、序数、条件分岐、およびリッチテキストタグのコンポーネント化。"
+order: 4
+lang: "ja-JP"
+---
+
+# ICU 構文とリッチテキスト描画
+
+`ts-intl` は、外部パーサーを必要とせず、ICU MessageFormat 1.x の標準構文を処理します。
+
+## 複数形処理 (Pluralization)
+
+### 構造化複数形オブジェクト
+
+CLDR カテゴリ（`zero`, `one`, `two`, `few`, `many`, `other`）に準拠したオブジェクト定義が可能です：
+
+```ts
+const messages = {
+  cart: {
+    zero: "カートは空です",
+    other: "カートに合計 {count} 件の商品があります",
+  },
+} as const;
+
+const t = getTranslations("ja-JP");
+
+t("cart", { count: 0 }); // "カートは空です"
+t("cart", { count: 1 }); // "カートに合計 1 件の商品があります"
+t("cart", { count: 5 }); // "カートに合計 5 件の商品があります"
+```
+
+> **注意**: CLDR 仕様において、日本語などの言語は `other` カテゴリのみを持ちます（`ts-intl` では `count === 0` の `zero` もサポート）。特定数値の出し分けが必要な場合は、インライン ICU `plural` 構文（`=1` など）を使用してください。
+
+### テンプレート内 ICU `plural` 構文
+
+```ts
+const messages = {
+  inbox:
+    "{count, plural, =0 {未読メッセージはありません} other {未読メッセージが # 件あります}}。",
+} as const;
+
+const t = getTranslations("ja-JP");
+
+t("inbox", { count: 0 }); // "未読メッセージはありません。"
+t("inbox", { count: 3 }); // "未読メッセージが 3 件あります。"
+```
+
+## 序数フォーマット (`selectordinal`)
+
+英語等の序数表現（`=1`, `=2`, `other` など）：
+
+```ts
+const messages = {
+  podium:
+    "{rank, selectordinal, =1 {1位} =2 {2位} =3 {3位} other {#位}}になりました！",
+} as const;
+
+const t = getTranslations("ja-JP");
+
+t("podium", { rank: 1 }); // "1位になりました！"
+t("podium", { rank: 4 }); // "4位になりました！"
+```
+
+## 条件分岐選択 (`select`)
+
+ステータスや権限コードに応じたテキストの出し分け：
+
+```ts
+const messages = {
+  roleBadge:
+    "{role, select, admin {管理者} editor {編集者} other {一般メンバー}}",
+} as const;
+
+const t = getTranslations("ja-JP");
+
+t("roleBadge", { role: "admin" }); // "管理者"
+t("roleBadge", { role: "guest" }); // "一般メンバー"
+```
+
+## リッチテキスト挿入 `t.rich()`
+
+XML 風タグを用いて文字列を UI コンポーネントや DOM ノードへマッピングし、`dangerouslySetInnerHTML` による XSS リスクを回避します：
+
+```ts
+const messages = {
+  notice: "続行する前に<terms>利用規約</terms>と<privacy>プライバシーポリシー</privacy>をご確認ください。",
+} as const;
+
+const t = getTranslations("ja-JP");
+
+// React / Vue 等で直接コンポーネント化
+const elements = t.rich("notice", {
+  terms: (children) => <a href="/terms" className="underline">{children}</a>,
+  privacy: (children) => <a href="/privacy" className="underline">{children}</a>,
+});
+```
+
+## HTML 文字列生成 `t.markup()`
+
+安全な HTML タグを含む文字列を生成する場合に使用します：
+
+```ts
+const html = t.markup("notice", {
+  terms: (c) => `<a href="/terms">${c}</a>`,
+  privacy: (c) => `<a href="/privacy">${c}</a>`,
+});
+```

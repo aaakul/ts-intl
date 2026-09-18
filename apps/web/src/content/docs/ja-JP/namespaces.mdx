@@ -1,0 +1,71 @@
+---
+title: "名前空間とスコープ"
+description: "名前空間による辞書の構造化とデータ取得方法。"
+order: 3
+lang: "ja-JP"
+---
+
+# 名前空間とスコープ
+
+機能や画面ごとに名前空間を分割することで、キー名の衝突を防ぎ、コードを整理できます。
+
+## スコープ付きトランスレーター
+
+`getTranslations` の第 2 引数に名前空間を渡すと、そのプレフィックスに限定された翻訳関数を取得できます：
+
+```ts
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "リアルタイム指標",
+      refresh: "データ更新",
+    },
+  },
+} as const;
+
+// ネストされた名前空間にスコープ
+const t = getTranslations("ja-JP", "admin.dashboard");
+
+t("metrics"); // "リアルタイム指標"
+t("refresh"); // "データ更新"
+```
+
+## ルートレベルのトランスレーター
+
+名前空間を省略すると、ドット区切りの全パスにアクセスできるトランスレーターが返されます：
+
+```ts
+const t = getTranslations("ja-JP");
+
+t("admin.dashboard.metrics"); // "リアルタイム指標"
+```
+
+## 生データの抽出 `t.raw()`
+
+文字列への置換を行わず、配列や設定オブジェクトをそのまま取り出したい場合は `t.raw()` を使用します：
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("ja-JP");
+
+const endpoints = t.raw("config.endpoints");
+// 推論型: readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## キー存在チェック `t.has()`
+
+未翻訳警告を出さずに、キーが現在の言語またはフォールバック言語に存在するかを判定します：
+
+```ts
+const t = getTranslations("ja-JP", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

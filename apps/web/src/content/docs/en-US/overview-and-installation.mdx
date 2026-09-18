@@ -1,0 +1,149 @@
+---
+title: "Overview & Installation"
+description: "Introduction to ts-intl, core design principles, and setup instructions."
+order: 1
+lang: "en-US"
+---
+
+# Overview & Installation
+
+`ts-intl` is a zero-dependency, framework-agnostic, strictly type-safe internationalization (i18n) library for modern TypeScript environments.
+
+It provides an API design inspired by `next-intl`, without requiring Next.js or binding to a specific UI framework.
+
+## Design Principles
+
+- **Zero Dependencies**: Zero runtime dependencies and no code generation build steps.
+- **Framework Agnostic**: Supports Astro, React, Vue, Svelte, Node.js, Bun, Cloudflare Workers, and browser environments.
+- **Strict Type Safety**: Complete compile-time type inference for translation keys, interpolated variables, namespaces, and dictionary structure alignment.
+
+## Installation
+
+Install `@aaakul/ts-intl` using a package manager:
+
+```bash
+# pnpm
+pnpm add @aaakul/ts-intl
+
+# npm
+npm install @aaakul/ts-intl
+
+# yarn
+yarn add @aaakul/ts-intl
+
+# bun
+bun add @aaakul/ts-intl
+```
+
+## Quick Start
+
+### 1. Define Message Dictionaries
+
+Create static dictionaries using `as const` to guarantee strict type inference:
+
+```ts
+// messages/en-US.ts
+export default {
+  common: {
+    title: "System Dashboard",
+    greeting: "Hello, {name: string}!",
+    items: {
+      one: "1 item in total",
+      other: "{count} items in total",
+    },
+  },
+} as const;
+```
+
+```ts
+// messages/zh-Hans.ts
+export default {
+  common: {
+    title: "系统仪表盘",
+    greeting: "你好，{name: string}！",
+    items: {
+      one: "共 1 项数据",
+      other: "共 {count} 项数据",
+    },
+  },
+} as const;
+```
+
+### 2. Initialize i18n Instance
+
+```ts
+// i18n.ts
+import { createI18n } from "@aaakul/ts-intl";
+import enUS from "./messages/en-US";
+import zhHans from "./messages/zh-Hans";
+
+export const {
+  getTranslations,
+  getFormatter,
+  isSupportedLanguage,
+  languages,
+  defaultLanguage,
+} = createI18n({
+  defaultLanguage: "en-US",
+  messages: {
+    "en-US": enUS,
+    "zh-Hans": zhHans,
+  },
+});
+
+export type Language = (typeof languages)[number];
+```
+
+### 3. Translate with Full Type Safety
+
+```ts
+import { getTranslations } from "./i18n";
+
+const t = getTranslations("en-US", "common");
+
+// 1. Static text
+const title = t("title");
+// Type: (key: "title") => string
+// Output: "System Dashboard"
+
+// 2. Interpolation with typed parameters
+const greeting = t("greeting", { name: "Developer" });
+// Type: (key: "greeting", params: { name: string }) => string
+// Output: "Hello, Developer!"
+
+// 3. Plural handling
+const items = t("items", { count: 5 });
+// Type: (key: "items", params: { count: number }) => string
+// Output: "5 items in total"
+```
+
+## Dictionary Formats
+
+### TypeScript Static Definitions (Recommended)
+
+Using TypeScript files with `as const` enables parameter type inference (`{name: string}`, `{count: number}`) and compile-time key validation:
+
+```ts
+export default {
+  auth: {
+    login: "Sign In",
+    welcome: "Welcome back, {username: string}!",
+  },
+} as const;
+```
+
+### JSON Dictionaries
+
+`createI18n` supports JSON dictionaries without extra build plugins:
+
+```ts
+import enUS from "./messages/en-US.json";
+import zhHans from "./messages/zh-Hans.json";
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "en-US",
+  messages: { "en-US": enUS, "zh-Hans": zhHans },
+});
+```
+
+_Note_: JSON dictionaries provide strong key and namespace autocomplete. Because JSON lacks `as const`, template parameter types default to relaxed inference.

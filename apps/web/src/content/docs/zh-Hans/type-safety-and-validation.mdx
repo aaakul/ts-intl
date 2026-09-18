@@ -1,0 +1,105 @@
+---
+title: "类型推断与校验"
+description: "编译期严格类型检查、参数约束与多语言词典结构对齐校验。"
+order: 2
+lang: "zh-Hans"
+---
+
+# 类型推断与校验
+
+`ts-intl` 利用 TypeScript 类型系统，在编译期检查不存在的键、参数缺失及跨语言词典结构不一致的问题。
+
+## 键检查与自动补全
+
+无论使用命名空间还是点分隔路径，IDE 均支持键名自动补全与类型检查：
+
+```ts
+const tCommon = getTranslations("zh-Hans", "common");
+tCommon("title"); // 自动补全: "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_typo");
+```
+
+点路径全局调用形式：
+
+```ts
+const tRoot = getTranslations("zh-Hans");
+tRoot("common.title"); // 自动补全: "common.title" | "common.greeting" | ...
+```
+
+## 参数约束
+
+模板包含占位符时，必须传递对应参数对象；不包含占位符时，禁止传递多余参数：
+
+```ts
+const t = getTranslations("zh-Hans", "common");
+
+// 无占位符：禁止传参
+t("title");
+
+// 包含占位符：必须传入参数对象
+t("greeting", { name: "张三" });
+
+// @ts-expect-error 缺少必填参数 { name: string }
+t("greeting");
+```
+
+## 显式参数类型标注
+
+在 TypeScript 词典中，可通过 `{name:type}` 语法明确指定参数标量类型，目前支持 `string`、`number` 与 `Date`：
+
+```ts
+export default {
+  status:
+    "用户 {name: string} 于 {timestamp: Date} 登录，总计: {total: number}",
+} as const;
+```
+
+TypeScript 会校验调用方传递的参数类型：
+
+```ts
+const t = getTranslations("zh-Hans");
+
+t("status", {
+  name: "张三",
+  timestamp: new Date(),
+  total: 100,
+});
+
+// @ts-expect-error 类型 'string' 不能赋值给类型 'number'
+t("status", { name: "张三", timestamp: new Date(), total: "100" });
+```
+
+## 多语言词典结构对齐（Schema 对齐）
+
+以 `defaultLanguage` 设定的语言词典为基准结构，其他语言在 `messages` 中配置时必须保持一致：
+
+- 其他语言中缺失键名时，在初始化配置处产生类型错误。
+- 其他语言中包含基准语言不存在的额外键时，产生类型错误。
+- 占位符变量名称必须保持一致（例如英文为 `{count}`，中文和日文亦必须为 `{count}`）。
+
+```ts
+const zhHans = {
+  welcome: "欢迎你，{user: string}！",
+} as const;
+
+const enUS = {
+  // @ts-expect-error 缺少 'welcome' 键
+  farewell: "Goodbye",
+} as const;
+
+createI18n({
+  defaultLanguage: "zh-Hans",
+  messages: { "zh-Hans": zhHans, "en-US": enUS },
+});
+```
+
+## 运行时词典校验
+
+在开发环境（非生产模式）下，`createI18n` 会在初始化阶段执行词典校验：
+
+- 检测词典键中是否误包含点号 `.`（点号为命名空间层级保留符号）。
+- 遇到结构差异时通过 `onError` 抛出诊断警告。
+
+生产构建时此校验自动关闭，不产生额外运行时开销。

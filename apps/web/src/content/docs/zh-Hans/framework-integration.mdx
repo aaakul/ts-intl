@@ -1,0 +1,121 @@
+---
+title: "框架集成与最佳实践"
+description: "在 Astro、React、Vue、Svelte 与 Node.js 中的集成方式及错误处理配置。"
+order: 6
+lang: "zh-Hans"
+---
+
+# 框架集成与最佳实践
+
+由于不依赖特定 UI 框架，`ts-intl` 可以集成到各类前端与全栈框架中。
+
+## Astro 静态生成与 SSR
+
+在 Astro 的静态生成（SSG）或服务端渲染（SSR）中，可在组件脚本上下文中获取翻译函数：
+
+```astro
+---
+// src/pages/[lang]/index.astro
+import { getTranslations } from "@/i18n";
+
+const { lang } = Astro.params;
+const t = getTranslations(lang as any, "home");
+---
+
+<section>
+  <h1>{t("hero.title")}</h1>
+  <p>{t("hero.subtitle")}</p>
+</section>
+```
+
+## React / Next.js
+
+```tsx
+import React from "react";
+import { getTranslations } from "@/i18n";
+
+export function Header({ locale }: { locale: "zh-Hans" | "en-US" }) {
+  const t = getTranslations(locale, "nav");
+  return (
+    <nav>
+      <a href="/docs">{t("docs")}</a>
+      <a href="/pricing">{t("pricing")}</a>
+    </nav>
+  );
+}
+```
+
+## Vue 3
+
+```vue
+<script setup lang="ts">
+import { getTranslations } from "@/i18n";
+
+const props = defineProps<{ locale: "zh-Hans" | "en-US" }>();
+const t = getTranslations(props.locale, "dashboard");
+</script>
+
+<template>
+  <main>
+    <h2>{{ t("title") }}</h2>
+  </main>
+</template>
+```
+
+## Svelte 5
+
+```svelte
+<script lang="ts">
+  import { getTranslations } from "$lib/i18n";
+
+  let { locale = "zh-Hans" } = $props();
+  const t = getTranslations(locale, "common");
+</script>
+
+<button>{t("saveChanges")}</button>
+```
+
+## 错误处理与回退
+
+在初始化时配置错误回调与缺失文案回退策略：
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "zh-Hans",
+  messages: { "zh-Hans": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] 缺失翻译键 "${error.key}"（语言: ${error.lang}）`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[未翻译: ${key}]`;
+  },
+});
+```
+
+## 完整 API 速查表
+
+### `createI18n` 返回值
+
+| 属性 / 方法                         | 类型                | 说明                                         |
+| :---------------------------------- | :------------------ | :------------------------------------------- |
+| `getTranslations(lang, namespace?)` | `Function (t)`      | 返回对应语言和命名空间的翻译函数             |
+| `getFormatter(lang?)`               | `Formatter`         | 返回缓存的 Web Intl 格式化器                 |
+| `isSupportedLanguage(lang)`         | `boolean`           | 类型守卫，判断指定语言是否在配置的语言列表中 |
+| `languages`                         | `readonly string[]` | 配置中支持的语言列表                         |
+| `defaultLanguage`                   | `string`            | 默认语言                                     |
+
+### 翻译器方法 (`t`)
+
+| 方法                               | 返回类型          | 说明                               |
+| :--------------------------------- | :---------------- | :--------------------------------- |
+| `t(key, params?, formats?)`        | `string`          | 格式化文本，处理参数插值与复数规则 |
+| `t.rich(key, params?, formats?)`   | `(string \| R)[]` | 解析 XML 标签并映射至前端组件节点  |
+| `t.markup(key, params?, formats?)` | `string`          | 生成包含安全 HTML 标签的字符串     |
+| `t.raw(key)`                       | `Exact / any`     | 获取字典中保存的原始对象或数组     |
+| `t.has(key)`                       | `boolean`         | 检测指定键是否存在，不触发缺失警告 |

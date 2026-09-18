@@ -1,0 +1,134 @@
+---
+title: "Framework Integration & Best Practices"
+description: "Recipes for integrating ts-intl into Astro, React, Vue, Svelte, and Node.js."
+order: 6
+lang: "en-US"
+---
+
+# Framework Integration & Best Practices
+
+Because `ts-intl` does not depend on a specific UI framework, it can be integrated into various frontend and backend environments.
+
+## Astro
+
+In Astro static site generation or server-side rendering, translations are evaluated during page construction:
+
+```astro
+---
+// src/pages/[lang]/index.astro
+import { getTranslations } from "@/i18n";
+
+const { lang } = Astro.params;
+const t = getTranslations(lang as any, "home");
+---
+
+<section>
+  <h1>{t("hero.title")}</h1>
+  <p>{t("hero.subtitle")}</p>
+</section>
+```
+
+## React / Next.js
+
+```tsx
+import React from "react";
+import { getTranslations } from "@/i18n";
+
+export function Header({ locale }: { locale: "en-US" | "zh-Hans" }) {
+  const t = getTranslations(locale, "nav");
+  return (
+    <nav>
+      <a href="/docs">{t("docs")}</a>
+      <a href="/pricing">{t("pricing")}</a>
+    </nav>
+  );
+}
+```
+
+## Vue 3
+
+```vue
+<script setup lang="ts">
+import { getTranslations } from "@/i18n";
+
+const props = defineProps<{ locale: "en-US" | "zh-Hans" }>();
+const t = getTranslations(props.locale, "dashboard");
+</script>
+
+<template>
+  <main>
+    <h2>{{ t("title") }}</h2>
+  </main>
+</template>
+```
+
+## Svelte 5
+
+```svelte
+<script lang="ts">
+  import { getTranslations } from "$lib/i18n";
+
+  let { locale = "en-US" } = $props();
+  const t = getTranslations(locale, "common");
+</script>
+
+<button>{t("saveChanges")}</button>
+```
+
+## Node.js & Edge Runtimes
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "en-US",
+  messages: {
+    "en-US": { welcomeEmail: "Welcome, {user: string}!" },
+  },
+});
+```
+
+## Error Handling & Fallbacks
+
+Customize fallback strategies and monitoring hooks:
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "en-US",
+  messages: { "en-US": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] Missing key "${error.key}" in language "${error.lang}"`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[${key}]`;
+  },
+});
+```
+
+## Complete API Reference
+
+### `createI18n` Output
+
+| Property                            | Return Type         | Description                             |
+| :---------------------------------- | :------------------ | :-------------------------------------- |
+| `getTranslations(lang, namespace?)` | `Function (t)`      | Returns scoped translation function     |
+| `getFormatter(lang?)`               | `Formatter`         | Returns cached singleton Intl formatter |
+| `isSupportedLanguage(lang)`         | `boolean`           | Type guard checking language validity   |
+| `languages`                         | `readonly string[]` | List of all configured languages        |
+| `defaultLanguage`                   | `string`            | Configured default fallback language    |
+
+### Translator Methods (`t`)
+
+| Method                             | Return Type       | Description                                       |
+| :--------------------------------- | :---------------- | :------------------------------------------------ |
+| `t(key, params?, formats?)`        | `string`          | Formats plain string with parameter interpolation |
+| `t.rich(key, params?, formats?)`   | `(string \| R)[]` | Tokenizes XML tags into custom component trees    |
+| `t.markup(key, params?, formats?)` | `string`          | Formats safe HTML string with tag callbacks       |
+| `t.raw(key)`                       | `Exact / any`     | Accesses nested configuration objects or arrays   |
+| `t.has(key)`                       | `boolean`         | Checks key existence without emitting warnings    |

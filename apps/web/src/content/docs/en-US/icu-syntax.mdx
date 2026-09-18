@@ -1,0 +1,107 @@
+---
+title: "ICU Message Syntax & Rich Text"
+description: "Pluralization, ordinals, conditional selection, and rich text markup."
+order: 4
+lang: "en-US"
+---
+
+# ICU Message Syntax & Rich Text
+
+`ts-intl` supports standard ICU MessageFormat 1.x features without third-party parser dependencies.
+
+## Pluralization
+
+### Structured Plural Objects
+
+Define object keys matching CLDR categories (`zero`, `one`, `two`, `few`, `many`, `other`):
+
+```ts
+const messages = {
+  cart: {
+    zero: "Your cart is empty",
+    one: "1 item in your cart",
+    other: "{count} items in your cart",
+  },
+} as const;
+
+const t = getTranslations("en-US");
+
+t("cart", { count: 0 }); // "Your cart is empty"
+t("cart", { count: 1 }); // "1 item in your cart"
+t("cart", { count: 8 }); // "8 items in your cart"
+```
+
+### Inline ICU `plural` Syntax
+
+```ts
+const messages = {
+  inbox:
+    "You have {count, plural, =0 {no unread messages} one {# message} other {# messages}}.",
+} as const;
+
+const t = getTranslations("en-US");
+
+t("inbox", { count: 0 }); // "You have no unread messages."
+t("inbox", { count: 1 }); // "You have 1 message."
+t("inbox", { count: 12 }); // "You have 12 messages."
+```
+
+## Ordinal Formatting (`selectordinal`)
+
+Ordinal numbers (`1st`, `2nd`, `3rd`, `4th`) are handled with exact matching priority (`=1`, `=2`) and fallback categories:
+
+```ts
+const messages = {
+  podium:
+    "You finished {rank, selectordinal, =1 {first} =2 {second} =3 {third} other {#th}}!",
+} as const;
+
+const t = getTranslations("en-US");
+
+t("podium", { rank: 1 }); // "You finished first!"
+t("podium", { rank: 4 }); // "You finished 4th!"
+```
+
+## Conditional Selection (`select`)
+
+Branch based on enum values or states:
+
+```ts
+const messages = {
+  roleBadge:
+    "{role, select, admin {Administrator} moderator {Moderator} other {Member}}",
+} as const;
+
+const t = getTranslations("en-US");
+
+t("roleBadge", { role: "admin" }); // "Administrator"
+t("roleBadge", { role: "guest" }); // "Member"
+```
+
+## Rich Text Interpolation `t.rich()`
+
+Map text containing XML-style tags to interactive components or DOM elements without using `dangerouslySetInnerHTML`:
+
+```ts
+const messages = {
+  terms: "Please accept our <link>Terms of Service</link> to continue.",
+} as const;
+
+const t = getTranslations("en-US");
+
+// In React / JSX:
+const element = t.rich("terms", {
+  link: (children) => <a href="/terms" className="underline">{children}</a>,
+});
+```
+
+## HTML String Markup `t.markup()`
+
+Generate strings containing safe HTML tags:
+
+```ts
+const html = t.markup("terms", {
+  link: (children) => `<a href="/terms">${children}</a>`,
+});
+// Output: 'Please accept our <a href="/terms">Terms of Service</a> to continue.'
+```

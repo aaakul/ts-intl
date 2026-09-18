@@ -1,0 +1,47 @@
+---
+import { getTranslations, type SupportedLanguage } from "@/i18n";
+import { SITE_CONFIG } from "@/config/site";
+
+interface Props {
+  lang: SupportedLanguage;
+}
+
+const { lang } = Astro.props;
+const t = getTranslations(lang, "footer");
+const tNav = getTranslations(lang, "nav");
+---
+
+<footer
+  class="py-12 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950"
+>
+  <div
+    class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400"
+  >
+    <p>{t("license")}</p>
+
+    <div class="flex items-center gap-6 sm:gap-8">
+      <a
+        href={`/${lang}/docs/overview-and-installation`}
+        class="hover:text-neutral-950 dark:hover:text-white transition-colors"
+      >
+        {tNav("docs")}
+      </a>
+      <a
+        href={SITE_CONFIG.githubUrl}
+        target="_blank"
+        rel="noreferrer"
+        class="hover:text-neutral-950 dark:hover:text-white transition-colors"
+      >
+        GitHub
+      </a>
+      <a
+        href={SITE_CONFIG.npmUrl}
+        target="_blank"
+        rel="noreferrer"
+        class="hover:text-neutral-950 dark:hover:text-white transition-colors"
+      >
+        npm
+      </a>
+    </div>
+  </div>
+</footer>

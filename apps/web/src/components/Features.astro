@@ -1,0 +1,64 @@
+---
+import { getTranslations, type SupportedLanguage } from "@/i18n";
+import Icon, { type IconName } from "./Icon.astro";
+
+interface Props {
+  lang: SupportedLanguage;
+}
+
+const { lang } = Astro.props;
+const t = getTranslations(lang, "features");
+
+interface FeatureItem {
+  icon: IconName;
+  title: string;
+  desc: string;
+}
+
+const features: FeatureItem[] = [
+  {
+    icon: "shield-check",
+    title: t("typeSafetyTitle"),
+    desc: t("typeSafetyDesc"),
+  },
+  {
+    icon: "package",
+    title: t("zeroDepTitle"),
+    desc: t("zeroDepDesc"),
+  },
+  {
+    icon: "languages",
+    title: t("icuTitle"),
+    desc: t("icuDesc"),
+  },
+  {
+    icon: "monitor",
+    title: t("frameworkTitle"),
+    desc: t("frameworkDesc"),
+  },
+];
+---
+
+<section
+  class="py-16 md:py-20 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50"
+>
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {
+        features.map((feature) => (
+          <div class="p-6 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs">
+            <div class="w-8 h-8 rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-900 dark:text-white mb-4">
+              <Icon name={feature.icon} class="w-4 h-4" />
+            </div>
+            <h3 class="text-base font-semibold text-neutral-900 dark:text-white mb-2">
+              {feature.title}
+            </h3>
+            <p class="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+              {feature.desc}
+            </p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,29 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --host",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@aaakul/ts-intl": "workspace:*",
+    "@astrojs/mdx": "^8.0.1",
+    "@astrojs/sitemap": "^3.7.4",
+    "@monaco-editor/loader": "^1.7.0",
+    "@unocss/astro": "^66.10.5",
+    "@unocss/reset": "^66.10.5",
+    "astro": "^7.3.2",
+    "preact": "^10.29.8",
+    "sucrase": "^3.35.1",
+    "unocss": "^66.10.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^5.9.3"
+  }
+}

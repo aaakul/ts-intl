@@ -1,0 +1,149 @@
+---
+title: "概述与安装"
+description: "ts-intl 简介、设计原则与安装配置指南。"
+order: 1
+lang: "zh-Hans"
+---
+
+# 概述与安装
+
+`ts-intl` 是一个零依赖、框架无关、严格类型安全的国际化（i18n）库。
+
+它提供与 `next-intl` 类似的 API 设计，但不依赖 Next.js 或特定 UI 框架，适用于现代 TypeScript 环境。
+
+## 设计原则
+
+- **零依赖**：无运行时依赖，无需构建阶段的代码生成。
+- **框架无关**：支持 Astro、React、Vue、Svelte、Node.js、Bun 以及浏览器等运行环境。
+- **严格类型安全**：翻译键、动态插值参数、命名空间以及多语言结构对齐均具备静态类型检查。
+
+## 安装
+
+使用包管理器安装 `@aaakul/ts-intl`：
+
+```bash
+# pnpm
+pnpm add @aaakul/ts-intl
+
+# npm
+npm install @aaakul/ts-intl
+
+# yarn
+yarn add @aaakul/ts-intl
+
+# bun
+bun add @aaakul/ts-intl
+```
+
+## 快速上手
+
+### 1. 定义多语言字典
+
+使用 `as const` 断言 TypeScript 对象，使类型系统能够推导键名与参数类型：
+
+```ts
+// messages/zh-Hans.ts
+export default {
+  common: {
+    title: "系统仪表盘",
+    greeting: "你好，{name: string}！",
+    items: {
+      one: "共 1 项数据",
+      other: "共 {count} 项数据",
+    },
+  },
+} as const;
+```
+
+```ts
+// messages/en-US.ts
+export default {
+  common: {
+    title: "System Dashboard",
+    greeting: "Hello, {name: string}!",
+    items: {
+      one: "1 item in total",
+      other: "{count} items in total",
+    },
+  },
+} as const;
+```
+
+### 2. 初始化 i18n 实例
+
+```ts
+// i18n.ts
+import { createI18n } from "@aaakul/ts-intl";
+import zhHans from "./messages/zh-Hans";
+import enUS from "./messages/en-US";
+
+export const {
+  getTranslations,
+  getFormatter,
+  isSupportedLanguage,
+  languages,
+  defaultLanguage,
+} = createI18n({
+  defaultLanguage: "zh-Hans",
+  messages: {
+    "zh-Hans": zhHans,
+    "en-US": enUS,
+  },
+});
+
+export type Language = (typeof languages)[number];
+```
+
+### 3. 获取翻译函数并调用
+
+```ts
+import { getTranslations } from "./i18n";
+
+const t = getTranslations("zh-Hans", "common");
+
+// 1. 静态键
+const title = t("title");
+// 推断类型: (key: "title") => string
+// 输出: "系统仪表盘"
+
+// 2. 带参数插值
+const greeting = t("greeting", { name: "开发者" });
+// 推断类型: (key: "greeting", params: { name: string }) => string
+// 输出: "你好，开发者！"
+
+// 3. 复数规则处理
+const items = t("items", { count: 5 });
+// 推断类型: (key: "items", params: { count: number }) => string
+// 输出: "共 5 项数据"
+```
+
+## 词典格式支持
+
+### TypeScript 静态定义（推荐）
+
+通过 `as const` 定义词典，支持编译期键名校验与参数类型提取：
+
+```ts
+export default {
+  auth: {
+    login: "登录",
+    welcome: "欢迎回来，{username: string}！",
+  },
+} as const;
+```
+
+### JSON 词典格式
+
+`createI18n` 支持导入 `.json` 文件作为词典，无需额外的打包插件：
+
+```ts
+import zhHans from "./messages/zh-Hans.json";
+import enUS from "./messages/en-US.json";
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "zh-Hans",
+  messages: { "zh-Hans": zhHans, "en-US": enUS },
+});
+```
+
+_说明_：JSON 格式同样支持键名自动补全与拼写检查；由于 JSON 本身不支持 `as const`，模板变量参数将推导为宽泛类型。

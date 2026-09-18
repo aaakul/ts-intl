@@ -1,0 +1,98 @@
+---
+title: "Web Intl Formatters & Caching"
+description: "Type-safe wrappers and instance caching around standard browser Intl formatters."
+order: 5
+lang: "en-US"
+---
+
+# Web Intl Formatters & Caching
+
+Repeatedly instantiating `Intl.NumberFormat` or `Intl.DateTimeFormat` creates unnecessary performance overhead. `ts-intl` wraps standard Web Intl APIs with type safety and built-in instance caching.
+
+## Accessing Formatters
+
+### Method 1: `getFormatter(lang?)` via `createI18n` (Recommended)
+
+Formatters obtain global preset configurations defined during initialization:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+export const { getTranslations, getFormatter } = createI18n({
+  defaultLanguage: "en-US",
+  formats: {
+    number: {
+      usd: { style: "currency", currency: "USD" },
+      compact: { notation: "compact" },
+    },
+    dateTime: {
+      short: { dateStyle: "short" },
+    },
+  },
+  messages: {
+    "en-US": {},
+  },
+});
+
+const formatter = getFormatter("en-US");
+```
+
+### Method 2: Standalone `createFormatter(options)`
+
+When operating in standalone utilities or microservices:
+
+```ts
+import { createFormatter } from "@aaakul/ts-intl";
+
+const formatter = createFormatter({
+  locale: "en-US",
+  formats: {
+    number: { usd: { style: "currency", currency: "USD" } },
+  },
+});
+```
+
+## Formatter Capabilities
+
+### Numbers & Currencies
+
+```ts
+formatter.number(1234567.89);
+// "1,234,567.89"
+
+formatter.number(2500, "usd");
+// "$2,500.00"
+
+formatter.number(1500000, "compact");
+// "1.5M"
+```
+
+### Dates & Times
+
+```ts
+formatter.dateTime(new Date(), { dateStyle: "long" });
+// "September 18, 2026"
+
+formatter.dateTimeRange(new Date("2026-09-01"), new Date("2026-09-05"));
+// "9/1/2026 – 9/5/2026"
+```
+
+### Relative Time
+
+Computes appropriate time units based on elapsed time:
+
+```ts
+const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+formatter.relativeTime(twoHoursAgo);
+// "2 hours ago"
+```
+
+### Localized Lists & Display Names
+
+```ts
+formatter.list(["TypeScript", "Astro", "UnoCSS"]);
+// "TypeScript, Astro, and UnoCSS"
+
+formatter.displayName("ja-JP", { type: "language" });
+// "Japanese"
+```

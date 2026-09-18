@@ -1,0 +1,55 @@
+---
+import Icon from "./Icon.astro";
+import Playground from "./Playground.astro";
+import { SITE_CONFIG } from "@/config/site";
+import { getTranslations, type SupportedLanguage } from "@/i18n";
+
+interface Props {
+  lang: SupportedLanguage;
+}
+
+const { lang } = Astro.props;
+const t = getTranslations(lang, "hero");
+---
+
+<section
+  class="relative min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-10 overflow-hidden border-b border-neutral-200 dark:border-neutral-800"
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-auto">
+    <div class="text-center mx-auto mb-5 sm:mb-6 lg:mb-8">
+      <h1
+        class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-neutral-950 dark:text-white leading-[1.15] mb-2 sm:mb-3"
+      >
+        {t("title")}
+      </h1>
+
+      <p
+        class="text-xs sm:text-sm md:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto"
+      >
+        {t("badge")}
+      </p>
+
+      <div
+        class="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-3"
+      >
+        <a
+          href={`/${lang}/docs/overview-and-installation`}
+          class="inline-flex items-center justify-center px-5 py-2.5 rounded-md text-xs font-medium text-white dark:text-neutral-950 bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+        >
+          {t("getStarted")}
+        </a>
+        <a
+          href={SITE_CONFIG.githubUrl}
+          target="_blank"
+          rel="noreferrer"
+          class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md text-xs font-medium text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+        >
+          <span>{t("github")}</span>
+          <Icon name="external-link" class="w-3.5 h-3.5 text-neutral-400" />
+        </a>
+      </div>
+    </div>
+
+    <Playground lang={lang} />
+  </div>
+</section>

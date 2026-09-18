@@ -1,0 +1,149 @@
+---
+title: "概要とインストール"
+description: "ts-intl の概要、設計原則、および導入方法。"
+order: 1
+lang: "ja-JP"
+---
+
+# 概要とインストール
+
+`ts-intl` は、軽量・ゼロ依存・厳格な型安全性を備えたモダン TypeScript 向けの国際化（i18n）ライブラリです。
+
+`next-intl` にインスパイアされた API 設計を採用し、Next.js や特定の UI フレームワークに依存せず動作します。
+
+## 設計原則
+
+- **ゼロ依存（Zero Dependencies）**: ランタイム依存関係ゼロ。ビルド時のコード生成ステップも不要です。
+- **フレームワーク非依存（Framework Agnostic）**: Astro、React、Vue、Svelte、Node.js、Bun、Cloudflare Workers、ブラウザ環境でそのまま動作します。
+- **厳格な型安全性（Strict Type Safety）**: 翻訳キー、変数プレースホルダー、名前空間、言語辞書構造の整合性を TypeScript がコンパイル時に検証します。
+
+## インストール
+
+パッケージマネージャーを使用して `@aaakul/ts-intl` をインストールします：
+
+```bash
+# pnpm
+pnpm add @aaakul/ts-intl
+
+# npm
+npm install @aaakul/ts-intl
+
+# yarn
+yarn add @aaakul/ts-intl
+
+# bun
+bun add @aaakul/ts-intl
+```
+
+## クイックスタート
+
+### 1. 翻訳辞書の定義
+
+`as const` を付与して静的型推論を有効にします：
+
+```ts
+// messages/ja-JP.ts
+export default {
+  common: {
+    title: "システムダッシュボード",
+    greeting: "こんにちは、{name: string}さん！",
+    items: {
+      one: "合計 1 件のデータ",
+      other: "合計 {count} 件のデータ",
+    },
+  },
+} as const;
+```
+
+```ts
+// messages/en-US.ts
+export default {
+  common: {
+    title: "System Dashboard",
+    greeting: "Hello, {name: string}!",
+    items: {
+      one: "1 item in total",
+      other: "{count} items in total",
+    },
+  },
+} as const;
+```
+
+### 2. i18n インスタンスの初期化
+
+```ts
+// i18n.ts
+import { createI18n } from "@aaakul/ts-intl";
+import jaJP from "./messages/ja-JP";
+import enUS from "./messages/en-US";
+
+export const {
+  getTranslations,
+  getFormatter,
+  isSupportedLanguage,
+  languages,
+  defaultLanguage,
+} = createI18n({
+  defaultLanguage: "ja-JP",
+  messages: {
+    "ja-JP": jaJP,
+    "en-US": enUS,
+  },
+});
+
+export type Language = (typeof languages)[number];
+```
+
+### 3. 型安全な翻訳の実行
+
+```ts
+import { getTranslations } from "./i18n";
+
+const t = getTranslations("ja-JP", "common");
+
+// 1. 静的テキスト
+const title = t("title");
+// 推論型: (key: "title") => string
+// 出力: "システムダッシュボード"
+
+// 2. パラメータ補間
+const greeting = t("greeting", { name: "開発者" });
+// 推論型: (key: "greeting", params: { name: string }) => string
+// 出力: "こんにちは、開発者さん！"
+
+// 3. 複数形対応
+const items = t("items", { count: 5 });
+// 推論型: (key: "items", params: { count: number }) => string
+// 出力: "合計 5 件のデータ"
+```
+
+## サポートされる辞書形式
+
+### TypeScript 静的定義（推奨）
+
+`as const` を使用することで、プレースホルダー型（`{name: string}`）を含む静的型付けと補完を利用できます：
+
+```ts
+export default {
+  auth: {
+    login: "ログイン",
+    welcome: "おかえりなさい、{username: string}さん！",
+  },
+} as const;
+```
+
+### JSON 形式の辞書
+
+`createI18n` はビルドプラグイン不要で `.json` ファイルを辞書として直接読み込めます：
+
+```ts
+import jaJP from "./messages/ja-JP.json";
+import enUS from "./messages/en-US.json";
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "ja-JP",
+  messages: { "ja-JP": jaJP, "en-US": enUS },
+});
+```
+
+_注意_: JSON 辞書でもキーや名前空間の補完と検証が機能します。JSON 自体に `as const` がないため、パラメータは柔軟な型推論となります。
