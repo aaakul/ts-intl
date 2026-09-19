@@ -37,6 +37,7 @@ const currentChapter =
   </summary>
 
   <nav
+    aria-label={t("chapters")}
     class="p-2 pt-1 space-y-1 border-t border-neutral-200 dark:border-neutral-800"
   >
     {
@@ -45,6 +46,7 @@ const currentChapter =
         return (
           <a
             href={`/${lang}/docs/${ch.slug}`}
+            aria-current={isActive ? "page" : undefined}
             class={`flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors ${
               isActive
                 ? "bg-neutral-200/70 dark:bg-neutral-800 text-neutral-950 dark:text-white font-semibold"
@@ -74,13 +76,14 @@ const currentChapter =
     {t("chapters")}
   </div>
 
-  <nav class="space-y-1">
+  <nav aria-label={t("chapters")} class="space-y-1">
     {
       docChapters.map((ch) => {
         const isActive = ch.slug === currentSlug;
         return (
           <a
             href={`/${lang}/docs/${ch.slug}`}
+            aria-current={isActive ? "page" : undefined}
             class={`group flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors ${
               isActive
                 ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-950 dark:text-white font-medium border-l-2 border-neutral-900 dark:border-white"

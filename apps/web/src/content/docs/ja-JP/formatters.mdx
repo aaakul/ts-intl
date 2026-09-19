@@ -1,19 +1,19 @@
 ---
-title: "Web Intl フォーマッターとキャッシュ"
-description: "Web 標準 Intl API の型安全ラッパーとシングルトンキャッシュ機構。"
+title: "Web Intl フォーマッター"
+description: "Web Intl API に基づく型安全なラッパーとインスタンスキャッシュフォーマッター。"
 order: 5
 lang: "ja-JP"
 ---
 
-# Web Intl フォーマッターとキャッシュ
+# Web Intl フォーマッター
 
-`Intl.NumberFormat` や `Intl.DateTimeFormat` を頻繁にインスタンス化するとパフォーマンスに影響します。`ts-intl` は Web 標準 Intl API をラップし、言語ごとのキャッシュ機能を提供します。
+`Intl.NumberFormat` や `Intl.DateTimeFormat` インスタンスの頻繁な生成は、不要なパフォーマンスオーバーヘッドをもたらします。`ts-intl` は Web 標準の Intl API をカプセル化し、組み込みのインスタンスキャッシュ機構を提供します。
 
-## フォーマッターの取得
+## フォーマッターインスタンスの取得
 
-### 方法 1: `createI18n` の `getFormatter`（推奨）
+### 方法 1: `createI18n` から `getFormatter` を取得（推奨）
 
-グローバル設定で定義されたプリセットフォーマット、タイムゾーン、エラーハンドラを継承します：
+この方法では、グローバル設定で事前設定されたフォーマットルール、タイムゾーン、およびエラーハンドリング設定を直接継承します：
 
 ```ts
 import { createI18n } from "@aaakul/ts-intl";
@@ -37,9 +37,9 @@ export const { getTranslations, getFormatter } = createI18n({
 const formatter = getFormatter("ja-JP");
 ```
 
-### 方法 2: 独立した `createFormatter(options)`
+### 方法 2: 独立した `createFormatter(options)` の呼び出し
 
-完全な i18n 辞書を必要としない独立したユーティリティ関数の作成に適しています：
+完全な i18n インスタンスに依存しない独立したコンポーネントやユーティリティモジュールに適しています：
 
 ```ts
 import { createFormatter } from "@aaakul/ts-intl";
@@ -52,7 +52,7 @@ const formatter = createFormatter({
 });
 ```
 
-## 主な機能
+## コアフォーマット機能
 
 ### 数値と通貨のフォーマット
 
@@ -77,9 +77,9 @@ formatter.dateTimeRange(new Date("2026-09-01"), new Date("2026-09-05"));
 // "2026/09/01～2026/09/05"
 ```
 
-### 相対時間フォーマット
+### 相対時間の計算
 
-時間差から適切な単位を判定します：
+時間差に基づいて時間単位を自動的にマッチングします：
 
 ```ts
 const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -87,7 +87,7 @@ formatter.relativeTime(twoHoursAgo);
 // "2 時間前"
 ```
 
-### リストと表示名フォーマット
+### リストとローカライズ表示名
 
 ```ts
 formatter.list(["リンゴ", "バナナ", "オレンジ"]);
@@ -95,4 +95,7 @@ formatter.list(["リンゴ", "バナナ", "オレンジ"]);
 
 formatter.displayName("en-US", { type: "language" });
 // "アメリカ英語"
+
+formatter.displayName("en", { type: "language" });
+// "英語"
 ```

@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/aaakul/ts-intl.git"
   },
-  "homepage": "https://github.com/aaakul/ts-intl#readme",
+  "homepage": "https://ts-intl.pages.dev/",
   "bugs": {
     "url": "https://github.com/aaakul/ts-intl/issues"
   },
@@ -40,7 +40,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "check": "npm run build && publint && attw --pack .",
-    "release": "bumpp && npm publish"
+    "release": "bumpp && pnpm publish --no-git-checks"
   },
   "keywords": [
     "i18n",

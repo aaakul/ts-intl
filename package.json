@@ -5,14 +5,14 @@
   "type": "module",
   "packageManager": "pnpm@12.4.2",
   "scripts": {
-    "build": "pnpm --filter \"@aaakul/ts-intl\" build && pnpm --filter web build",
-    "build:lib": "pnpm --filter \"@aaakul/ts-intl\" build",
+    "build": "pnpm --filter \"./packages/*\" build && pnpm --filter web build",
+    "build:lib": "pnpm --filter \"./packages/*\" build",
     "build:web": "pnpm --filter web build",
     "dev": "pnpm --filter web dev",
-    "dev:lib": "pnpm --filter \"@aaakul/ts-intl\" dev",
-    "test": "pnpm --filter \"@aaakul/ts-intl\" test",
-    "test:watch": "pnpm --filter \"@aaakul/ts-intl\" test:watch",
-    "typecheck": "pnpm --filter \"@aaakul/ts-intl\" typecheck && pnpm --filter web check",
+    "dev:lib": "pnpm --filter \"./packages/*\" dev",
+    "test": "pnpm --filter \"./packages/*\" test",
+    "test:watch": "pnpm --filter \"./packages/*\" test:watch",
+    "typecheck": "pnpm --filter \"./packages/*\" typecheck && pnpm --filter web check",
     "check": "pnpm --filter \"@aaakul/ts-intl\" check"
   }
 }

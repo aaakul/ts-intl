@@ -1,19 +1,19 @@
 ---
 title: "ICU 構文とリッチテキスト描画"
-description: "複数形、序数、条件分岐、およびリッチテキストタグのコンポーネント化。"
+description: "複数形ルール、序数詞、条件分岐、およびリッチテキストコンポーネント描画構文。"
 order: 4
 lang: "ja-JP"
 ---
 
 # ICU 構文とリッチテキスト描画
 
-`ts-intl` は、外部パーサーを必要とせず、ICU MessageFormat 1.x の標準構文を処理します。
+`ts-intl` は ICU MessageFormat 1.x の標準構文をサポートします。
 
-## 複数形処理 (Pluralization)
+## 複数形サポート (Pluralization)
 
 ### 構造化複数形オブジェクト
 
-CLDR カテゴリ（`zero`, `one`, `two`, `few`, `many`, `other`）に準拠したオブジェクト定義が可能です：
+CLDR 標準の複数形カテゴリ（`zero`、`one`、`two`、`few`、`many`、`other`）に準拠したネストオブジェクト形式をサポートします：
 
 ```ts
 const messages = {
@@ -30,7 +30,7 @@ t("cart", { count: 1 }); // "カートに合計 1 件の商品があります"
 t("cart", { count: 5 }); // "カートに合計 5 件の商品があります"
 ```
 
-> **注意**: CLDR 仕様において、日本語などの言語は `other` カテゴリのみを持ちます（`ts-intl` では `count === 0` の `zero` もサポート）。特定数値の出し分けが必要な場合は、インライン ICU `plural` 構文（`=1` など）を使用してください。
+> **説明**：CLDR 仕様において、日本語には `other` 複数形カテゴリのみが存在します（`ts-intl` では `count === 0` の場合に `zero` も追加サポートしています）。特定数値（例：1）に応じた文言の出し分けが必要な場合は、下記のテンプレート内埋め込み ICU `plural` 構文（`=1` など）の利用を推奨します。
 
 ### テンプレート内 ICU `plural` 構文
 
@@ -46,9 +46,9 @@ t("inbox", { count: 0 }); // "未読メッセージはありません。"
 t("inbox", { count: 3 }); // "未読メッセージが 3 件あります。"
 ```
 
-## 序数フォーマット (`selectordinal`)
+## 序数詞のフォーマット (`selectordinal`)
 
-英語等の序数表現（`=1`, `=2`, `other` など）：
+序数表現の処理に使用します（完全一致 `=` が分類ルールより優先されます）：
 
 ```ts
 const messages = {
@@ -64,7 +64,7 @@ t("podium", { rank: 4 }); // "4位になりました！"
 
 ## 条件分岐選択 (`select`)
 
-ステータスや権限コードに応じたテキストの出し分け：
+ステータス列挙型や分類値に基づいて異なる文言をマッチングします：
 
 ```ts
 const messages = {
@@ -78,9 +78,9 @@ t("roleBadge", { role: "admin" }); // "管理者"
 t("roleBadge", { role: "guest" }); // "一般メンバー"
 ```
 
-## リッチテキスト挿入 `t.rich()`
+## 汎用リッチテキスト補間 `t.rich()`
 
-XML 風タグを用いて文字列を UI コンポーネントや DOM ノードへマッピングし、`dangerouslySetInnerHTML` による XSS リスクを回避します：
+XML 風タグを通じて文言をフロントエンドコンポーネントや DOM ノードへマッピングし、`dangerouslySetInnerHTML` による XSS リスクを回避します：
 
 ```ts
 const messages = {
@@ -96,9 +96,9 @@ const elements = t.rich("notice", {
 });
 ```
 
-## HTML 文字列生成 `t.markup()`
+## HTML 文字列マークアップ描画 `t.markup()`
 
-安全な HTML タグを含む文字列を生成する場合に使用します：
+安全な HTML タグを含む文字列を生成するために使用します：
 
 ```ts
 const html = t.markup("notice", {

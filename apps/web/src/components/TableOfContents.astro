@@ -21,7 +21,11 @@ const filteredHeadings = headings.filter((h) => h.depth === 2 || h.depth === 3);
 
 {
   filteredHeadings.length > 0 && (
-    <nav class="hidden xl:block w-56 shrink-0 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto pl-6 text-xs border-l border-neutral-200/80 dark:border-neutral-800/80">
+    <nav
+      id="table-of-contents"
+      aria-label={t("onThisPage")}
+      class="hidden xl:block w-56 shrink-0 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto pl-6 text-xs border-l border-neutral-200/80 dark:border-neutral-800/80"
+    >
       <div class="text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-semibold mb-3">
         {t("onThisPage")}
       </div>
@@ -30,7 +34,8 @@ const filteredHeadings = headings.filter((h) => h.depth === 2 || h.depth === 3);
           <li class={h.depth === 3 ? "pl-3" : ""}>
             <a
               href={`#${h.slug}`}
-              class="block text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors truncate"
+              data-slug={h.slug}
+              class="toc-link block text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors truncate"
             >
               {h.text}
             </a>
@@ -40,3 +45,77 @@ const filteredHeadings = headings.filter((h) => h.depth === 2 || h.depth === 3);
     </nav>
   )
 }
+
+<script is:inline>
+  function setupTocScrollSpy() {
+    const toc = document.getElementById("table-of-contents");
+    if (!toc) return;
+
+    const links = Array.from(toc.querySelectorAll(".toc-link"));
+    if (links.length === 0) return;
+
+    const headings = links
+      .map((link) => {
+        const slug = link.getAttribute("data-slug");
+        return slug ? document.getElementById(slug) : null;
+      })
+      .filter(Boolean);
+
+    if (headings.length === 0) return;
+
+    let activeLink = null;
+
+    function setActive(link) {
+      if (activeLink === link) return;
+      if (activeLink) {
+        activeLink.classList.remove(
+          "text-neutral-950",
+          "dark:text-white",
+          "font-medium",
+        );
+        activeLink.classList.add("text-neutral-500", "dark:text-neutral-400");
+        activeLink.removeAttribute("aria-current");
+      }
+      activeLink = link;
+      if (activeLink) {
+        activeLink.classList.remove(
+          "text-neutral-500",
+          "dark:text-neutral-400",
+        );
+        activeLink.classList.add(
+          "text-neutral-950",
+          "dark:text-white",
+          "font-medium",
+        );
+        activeLink.setAttribute("aria-current", "location");
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute("id");
+            const targetLink = links.find(
+              (l) => l.getAttribute("data-slug") === id,
+            );
+            if (targetLink) {
+              setActive(targetLink);
+              break;
+            }
+          }
+        }
+      },
+      { rootMargin: "0px 0px -70% 0px", threshold: 0 },
+    );
+
+    headings.forEach((h) => observer.observe(h));
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupTocScrollSpy);
+  } else {
+    setupTocScrollSpy();
+  }
+  document.addEventListener("astro:after-swap", setupTocScrollSpy);
+</script>

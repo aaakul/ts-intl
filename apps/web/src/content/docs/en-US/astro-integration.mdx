@@ -1,0 +1,195 @@
+---
+title: "Astro Integration"
+description: "Context-based and middleware-driven internationalization for Astro using ts-intl-astro, eliminating prop drilling across components."
+order: 7
+lang: "en-US"
+---
+
+# Astro Integration (ts-intl-astro)
+
+`ts-intl-astro` is an integration package for Astro built on top of the core library `@aaakul/ts-intl`. By managing request language state with asynchronous context (`AsyncLocalStorage`), it eliminates the need to pass language props down through the component tree (Prop Drilling).
+
+## Key Features
+
+- **Zero Prop Drilling**: Powered by `AsyncLocalStorage` and Astro middleware in Node.js and modern runtimes, any component can directly call `useTranslations()` to access translation functions for the active request language.
+- **Automated Middleware Injection**: Registering the integration in `astro.config.mjs` automatically injects pre-middleware into Astro's rendering pipeline to resolve the active page locale. Supports `context.currentLocale`, route parameters (`[lang]`, `[locale]`), and URL path analysis.
+- **Strict Type Safety**: Inherits compile-time full type inference from `ts-intl`, including namespace constraints, key auto-completion, ICU parameter validation, and cross-language dictionary parity checking.
+
+## Installation
+
+Install `ts-intl-astro` and its dependencies in your Astro project:
+
+```bash
+pnpm add ts-intl-astro
+# or
+npm install ts-intl-astro
+# or
+yarn add ts-intl-astro
+```
+
+## Quick Setup
+
+### 1. Initialize the i18n Instance
+
+Create and export translation hooks and instance configuration in `src/i18n/index.ts`:
+
+```ts
+// src/i18n/index.ts
+import { createAstroI18n } from "ts-intl-astro";
+import enUS from "./messages/en-US";
+import zhHans from "./messages/zh-Hans";
+
+export const {
+  useTranslations,
+  useLocale,
+  useFormatter,
+  languages,
+  defaultLanguage,
+} = createAstroI18n({
+  defaultLanguage: "en-US",
+  messages: {
+    "en-US": enUS,
+    "zh-Hans": zhHans,
+  },
+});
+
+export type SupportedLanguage = (typeof languages)[number];
+```
+
+### 2. Register the Astro Integration
+
+Import and enable `tsIntl` in your `astro.config.mjs`:
+
+```js
+// astro.config.mjs
+import { defineConfig } from "astro/config";
+import tsIntl from "ts-intl-astro";
+
+export default defineConfig({
+  integrations: [tsIntl()],
+});
+```
+
+The integration automatically registers context middleware during Astro build and runtime. When a page handles a request or generates static pages, the middleware resolves the route locale and injects the active context into the request scope.
+
+## Component Usage
+
+With context middleware enabled, components do not need to declare or accept a `lang` prop:
+
+### Basic Usage
+
+```astro
+---
+// src/components/Header.astro
+import { useTranslations, useLocale } from "@/i18n";
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<header class="flex items-center justify-between p-4">
+  <nav class="space-x-4">
+    <a href={`/${lang}`}>{t("home")}</a>
+    <a href={`/${lang}/docs`}>{t("docs")}</a>
+    <a href={`/${lang}/pricing`}>{t("pricing")}</a>
+  </nav>
+</header>
+```
+
+### Explicit Locale Override
+
+When an isolated component needs to be rendered in a specific locale (such as in a language switcher preview), pass the `{ locale }` option to override:
+
+```astro
+---
+import { useTranslations } from "@/i18n";
+
+const tEn = useTranslations("hero", { locale: "en-US" });
+---
+
+<p>{tEn("title")}</p>
+```
+
+### Using Formatters
+
+Call `useFormatter()` to access cached Web `Intl` formatters bound to the current locale context:
+
+```astro
+---
+import { useFormatter } from "@/i18n";
+
+const fmt = useFormatter();
+const formattedPrice = fmt.number(129.99, { style: "currency", currency: "USD" });
+const formattedDate = fmt.dateTime(new Date(), { dateStyle: "medium" });
+---
+
+<div>
+  <span>{formattedPrice}</span>
+  <time>{formattedDate}</time>
+</div>
+```
+
+## Route Segment Configuration and Usage (Route Segments)
+
+It is recommended to organize multilingual page structures using dynamic route segments, such as `src/pages/[lang]/index.astro` or `src/pages/[locale]/about.astro`.
+
+### Static Route Generation (SSG)
+
+In Static Site Generation mode, pair the exported `languages` array with `getStaticPaths()`:
+
+```astro
+---
+// src/pages/[lang]/index.astro
+import { languages, useTranslations, useLocale } from "@/i18n";
+
+export function getStaticPaths() {
+  return languages.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<nav>
+  <a href={`/${lang}`}>{t("home")}</a>
+  <a href={`/${lang}/docs`}>{t("docs")}</a>
+</nav>
+```
+
+### Route Segment Resolution Mechanism
+
+- **Default Route Segment Parameter Names**: The middleware automatically inspects dynamic route parameters `context.params.lang` and `context.params.locale` by default. As long as your directory is named `[lang]` or `[locale]`, it works with zero configuration.
+- **Zero-prop Context Injection**: Before the page and its child components render, the middleware extracts the locale from the route segment and writes it into the asynchronous scope. Any nested child components can call `useTranslations()` or `useLocale()` directly to access the active locale, completely eliminating prop drilling from the page down to child components.
+- **Custom Route Parameter Names**: If your project uses different parameter names in its route paths (e.g., `src/pages/[localeCode]/...`), configure them via the `paramNames` option in `createAstroI18n`:
+
+```ts
+export const {
+  /* ... */
+} = createAstroI18n({
+  defaultLanguage: "en-US",
+  paramNames: ["localeCode", "lang", "locale"],
+  messages: {
+    /* ... */
+  },
+});
+```
+
+## Locale Resolution Strategy
+
+`ts-intl-astro` resolves the request locale using the following priority order:
+
+1. **Astro Built-in `context.currentLocale`** (Astro native i18n routing)
+2. **Route Dynamic Params** (inspects `context.params.lang` and `context.params.locale`, configurable via `paramNames`)
+3. **URL Path Prefix Analysis** (e.g. extracts leading segment like `/en-US/...`)
+4. **Default Language Fallback** (the `defaultLanguage` specified in configuration)
+
+## API Reference
+
+| API                           | Type              | Description                                                                                        |
+| :---------------------------- | :---------------- | :------------------------------------------------------------------------------------------------- |
+| `createAstroI18n(config)`     | `Function`        | Initializes Astro-specific i18n instance; supports `defaultLanguage`, `messages`, and `paramNames` |
+| `useTranslations(ns?, opts?)` | `Function`        | Returns translator function `t` bound to current rendering context                                 |
+| `useLocale()`                 | `() => string`    | Returns active language code for current rendering context                                         |
+| `useFormatter(opts?)`         | `() => Formatter` | Returns cached Web `Intl` formatter bound to current locale context                                |

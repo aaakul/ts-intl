@@ -1,17 +1,17 @@
 ---
-title: "Type Safety & Validation"
-description: "Compile-time type checking, parameter constraints, and dictionary validation."
+title: "Type Inference & Validation"
+description: "Compile-time strict type checking, parameter constraints, and cross-language dictionary structure alignment validation."
 order: 2
 lang: "en-US"
 ---
 
-# Type Safety & Validation
+# Type Inference & Validation
 
-`ts-intl` uses TypeScript's type system to check for nonexistent keys, missing parameters, and dictionary schema mismatches at compile time.
+`ts-intl` leverages TypeScript's type system to check for nonexistent keys, missing parameters, and cross-language dictionary structure inconsistencies.
 
 ## Key Checking & Autocomplete
 
-Whether calling `t` with a namespace scope or a root translator with dot notation, TypeScript validates each key:
+Whether using namespaces or dot-separated paths, IDEs support key auto-completion and type checking:
 
 ```ts
 const tCommon = getTranslations("en-US", "common");
@@ -21,7 +21,7 @@ tCommon("title"); // Autocomplete: "title" | "greeting" | "items"
 tCommon("title_misspelled");
 ```
 
-When using a root-level translator:
+Dot-path global invocation format:
 
 ```ts
 const tRoot = getTranslations("en-US");
@@ -30,7 +30,7 @@ tRoot("common.title"); // Autocomplete: "common.title" | "common.greeting" | ...
 
 ## Parameter Constraints
 
-If a translation string defines placeholders, passing the parameter object is mandatory:
+When a template contains placeholders, the corresponding parameter object must be passed; when it contains no placeholders, passing extra arguments is forbidden:
 
 ```ts
 const t = getTranslations("en-US", "common");
@@ -41,13 +41,13 @@ t("title");
 // Has placeholder: parameters are required
 t("greeting", { name: "Alice" });
 
-// @ts-expect-error Missing required argument: { name: string }
+// @ts-expect-error Missing required parameter { name: string }
 t("greeting");
 ```
 
 ## Explicit Parameter Type Annotations
 
-Placeholders support explicit type annotations using `{name:type}` syntax. Supported scalar types: `string`, `number`, and `Date`.
+In TypeScript dictionaries, scalar parameter types can be explicitly specified via `{name:type}` syntax; currently `string`, `number`, and `Date` are supported:
 
 ```ts
 export default {
@@ -56,7 +56,7 @@ export default {
 } as const;
 ```
 
-TypeScript validates caller argument types against these declarations:
+TypeScript validates the parameter types passed by the caller:
 
 ```ts
 const t = getTranslations("en-US");
@@ -71,13 +71,13 @@ t("status", {
 t("status", { name: "Alice", timestamp: new Date(), total: "42" });
 ```
 
-## Cross-Language Schema Alignment
+## Cross-Language Dictionary Structure Alignment (Schema Alignment)
 
-The `defaultLanguage` dictionary serves as the baseline schema. Every other language passed to `messages` must mirror its structure:
+Taking the language dictionary configured in `defaultLanguage` as the baseline structure, other languages configured in `messages` must remain consistent:
 
-- Missing keys in secondary languages generate compilation errors.
-- Extraneous keys not present in the default language trigger warnings.
-- Parameter names must match across languages (`{count}` in English requires `{count}` in Chinese and Japanese).
+- When keys are missing in other languages, a type error is raised at the initialization configuration.
+- When other languages contain extra keys that do not exist in the baseline language, a type error is raised.
+- Placeholder variable names must remain consistent (e.g., if English is `{count}`, Chinese and Japanese must also be `{count}`).
 
 ```ts
 const enUS = {
@@ -97,9 +97,9 @@ createI18n({
 
 ## Runtime Dictionary Validation
 
-In development mode, `createI18n` automatically verifies dictionary integrity on initialization:
+In development environments (non-production mode), `createI18n` performs dictionary validation during the initialization phase:
 
-- Detects forbidden dots inside key names (which would cause path resolution collisions).
-- Alerts about structurally divergent language maps via `onError`.
+- Detects whether dictionary keys inadvertently contain dots `.` (dots are reserved symbols for namespace hierarchies).
+- Emits diagnostic warnings via `onError` when structural differences are encountered.
 
-In production builds (`NODE_ENV === 'production'`), these validation checks are stripped, incurring no runtime performance overhead.
+This validation is automatically disabled during production builds, incurring no additional runtime overhead.

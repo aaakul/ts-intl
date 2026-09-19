@@ -9,7 +9,7 @@ lang: "zh-Hans"
 
 `ts-intl` 是一个零依赖、框架无关、严格类型安全的国际化（i18n）库。
 
-它提供与 `next-intl` 类似的 API 设计，但不依赖 Next.js 或特定 UI 框架，适用于现代 TypeScript 环境。
+它提供与 `next-intl` 类似的 API 设计，但不依赖 Next.js 或特定 UI 框架，适用于现代 TypeScript 开发。
 
 ## 设计原则
 
@@ -134,7 +134,7 @@ export default {
 
 ### JSON 词典格式
 
-`createI18n` 支持导入 `.json` 文件作为词典，无需额外的打包插件：
+_说明_：JSON 格式同样支持键名自动补全与拼写检查；由于 JSON 本身不支持 `as const`，模板变量参数将推导为宽泛类型。
 
 ```ts
 import zhHans from "./messages/zh-Hans.json";
@@ -145,5 +145,3 @@ export const { getTranslations } = createI18n({
   messages: { "zh-Hans": zhHans, "en-US": enUS },
 });
 ```
-
-_说明_：JSON 格式同样支持键名自动补全与拼写检查；由于 JSON 本身不支持 `as const`，模板变量参数将推导为宽泛类型。

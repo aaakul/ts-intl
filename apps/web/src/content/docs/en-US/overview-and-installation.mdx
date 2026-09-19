@@ -7,15 +7,15 @@ lang: "en-US"
 
 # Overview & Installation
 
-`ts-intl` is a zero-dependency, framework-agnostic, strictly type-safe internationalization (i18n) library for modern TypeScript environments.
+`ts-intl` is a zero-dependency, framework-agnostic, strictly type-safe internationalization (i18n) library.
 
-It provides an API design inspired by `next-intl`, without requiring Next.js or binding to a specific UI framework.
+It provides an API design similar to `next-intl`, without depending on Next.js or a specific UI framework, suitable for modern TypeScript development.
 
 ## Design Principles
 
 - **Zero Dependencies**: Zero runtime dependencies and no code generation build steps.
-- **Framework Agnostic**: Supports Astro, React, Vue, Svelte, Node.js, Bun, Cloudflare Workers, and browser environments.
-- **Strict Type Safety**: Complete compile-time type inference for translation keys, interpolated variables, namespaces, and dictionary structure alignment.
+- **Framework Agnostic**: Supports Astro, React, Vue, Svelte, Node.js, Bun, and browser environments.
+- **Strict Type Safety**: Translation keys, dynamic interpolation parameters, namespaces, and multi-language structure alignment all feature static type checking.
 
 ## Installation
 
@@ -39,7 +39,7 @@ bun add @aaakul/ts-intl
 
 ### 1. Define Message Dictionaries
 
-Create static dictionaries using `as const` to guarantee strict type inference:
+Assert TypeScript objects using `as const` so that the type system can infer key names and parameter types:
 
 ```ts
 // messages/en-US.ts
@@ -94,26 +94,26 @@ export const {
 export type Language = (typeof languages)[number];
 ```
 
-### 3. Translate with Full Type Safety
+### 3. Obtain and Call Translator Functions
 
 ```ts
 import { getTranslations } from "./i18n";
 
 const t = getTranslations("en-US", "common");
 
-// 1. Static text
+// 1. Static key
 const title = t("title");
-// Type: (key: "title") => string
+// Inferred type: (key: "title") => string
 // Output: "System Dashboard"
 
-// 2. Interpolation with typed parameters
+// 2. Interpolation with parameters
 const greeting = t("greeting", { name: "Developer" });
-// Type: (key: "greeting", params: { name: string }) => string
+// Inferred type: (key: "greeting", params: { name: string }) => string
 // Output: "Hello, Developer!"
 
-// 3. Plural handling
+// 3. Plural rule handling
 const items = t("items", { count: 5 });
-// Type: (key: "items", params: { count: number }) => string
+// Inferred type: (key: "items", params: { count: number }) => string
 // Output: "5 items in total"
 ```
 
@@ -121,7 +121,7 @@ const items = t("items", { count: 5 });
 
 ### TypeScript Static Definitions (Recommended)
 
-Using TypeScript files with `as const` enables parameter type inference (`{name: string}`, `{count: number}`) and compile-time key validation:
+Define dictionaries using `as const` to support compile-time key validation and parameter type extraction:
 
 ```ts
 export default {
@@ -134,7 +134,7 @@ export default {
 
 ### JSON Dictionaries
 
-`createI18n` supports JSON dictionaries without extra build plugins:
+_Note_: JSON format also supports key auto-completion and spell checking; because JSON does not support `as const`, template variable parameters will be inferred as loose types.
 
 ```ts
 import enUS from "./messages/en-US.json";
@@ -145,5 +145,3 @@ export const { getTranslations } = createI18n({
   messages: { "en-US": enUS, "zh-Hans": zhHans },
 });
 ```
-
-_Note_: JSON dictionaries provide strong key and namespace autocomplete. Because JSON lacks `as const`, template parameter types default to relaxed inference.

@@ -14,6 +14,10 @@ It provides a developer experience similar to `next-intl`, but without requiring
 - **Framework Agnostic**: Runs seamlessly in browsers, Node.js, Bun, and any other JavaScript / TypeScript environment.
 - **Strict Type Safety**: Full TypeScript type inference for translation keys, parameters, and namespaces.
 
+## Ecosystem & Framework Integrations
+
+- **Astro**: [`ts-intl-astro`](./packages/ts-intl-astro/README.md) - Lightweight, zero-config, strictly type-safe Astro integration.
+
 ## Installation
 
 ```bash

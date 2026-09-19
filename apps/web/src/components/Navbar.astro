@@ -44,10 +44,12 @@ function getLanguageUrl(targetLang: SupportedLanguage) {
     <!-- Right: Navigation & Actions -->
     <div class="flex items-center gap-4">
       <nav
+        aria-label="Main Navigation"
         class="hidden md:flex items-center gap-5 text-xs font-medium text-neutral-600 dark:text-neutral-400"
       >
         <a
           href={`/${lang}/docs/overview-and-installation`}
+          aria-current={isDocsPage ? "page" : undefined}
           class={`hover:text-neutral-950 dark:hover:text-white transition-colors ${
             isDocsPage ? "text-neutral-950 dark:text-white font-semibold" : ""
           }`}
@@ -57,7 +59,7 @@ function getLanguageUrl(targetLang: SupportedLanguage) {
         <a
           href={SITE_CONFIG.githubUrl}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           class="flex items-center gap-1.5 hover:text-neutral-950 dark:hover:text-white transition-colors"
         >
           <span>{t("github")}</span>
@@ -69,11 +71,11 @@ function getLanguageUrl(targetLang: SupportedLanguage) {
       </div>
 
       <!-- Language Selector -->
-      <div class="relative group" id="lang-dropdown">
+      <div class="relative" id="lang-dropdown">
         <button
           type="button"
           id="lang-dropdown-btn"
-          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
           aria-label={t("switchLanguage")}
           aria-haspopup="true"
           aria-expanded="false"
@@ -86,12 +88,16 @@ function getLanguageUrl(targetLang: SupportedLanguage) {
 
         <div
           id="lang-dropdown-menu"
-          class="absolute right-0 mt-1 w-32 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-md hidden group-hover:block group-focus-within:block z-50"
+          role="menu"
+          aria-labelledby="lang-dropdown-btn"
+          class="absolute right-0 mt-1 w-32 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-md hidden z-50"
         >
           {
             languages.map((l) => (
               <a
                 href={getLanguageUrl(l)}
+                role="menuitem"
+                aria-current={l === lang ? "true" : undefined}
                 class={`block px-3 py-1.5 text-xs text-left transition-colors ${
                   l === lang
                     ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-950 dark:text-white font-medium"
@@ -112,11 +118,11 @@ function getLanguageUrl(targetLang: SupportedLanguage) {
       <a
         href={SITE_CONFIG.githubUrl}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         class="md:hidden p-2 rounded-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
         aria-label={t("github")}
       >
-        <Icon name="external-link" class="w-4 h-4" />
+        <Icon name="github" class="w-4 h-4" />
       </a>
 
       <!-- Mobile Docs Link (shown when not already on docs page) -->
@@ -139,22 +145,50 @@ function getLanguageUrl(targetLang: SupportedLanguage) {
     const btn = document.getElementById("lang-dropdown-btn");
     const menu = document.getElementById("lang-dropdown-menu");
     if (!btn || !menu) return;
+
     btn.onclick = (e) => {
       e.stopPropagation();
-      const isOpen = menu.classList.toggle("!block");
-      btn.setAttribute("aria-expanded", String(isOpen));
-    };
-    document.addEventListener("click", () => {
-      menu.classList.remove("!block");
-      btn.setAttribute("aria-expanded", "false");
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && menu.classList.contains("!block")) {
-        menu.classList.remove("!block");
+      const isExpanded = btn.getAttribute("aria-expanded") === "true";
+      if (isExpanded) {
+        menu.classList.add("hidden");
         btn.setAttribute("aria-expanded", "false");
-        btn.focus();
+      } else {
+        menu.classList.remove("hidden");
+        btn.setAttribute("aria-expanded", "true");
       }
-    });
+    };
+
+    if (!window.__langDropdownListenersAttached) {
+      window.__langDropdownListenersAttached = true;
+      document.addEventListener("click", (e) => {
+        const currentBtn = document.getElementById("lang-dropdown-btn");
+        const currentMenu = document.getElementById("lang-dropdown-menu");
+        if (
+          currentBtn &&
+          currentMenu &&
+          !currentBtn.contains(e.target) &&
+          !currentMenu.contains(e.target)
+        ) {
+          currentMenu.classList.add("hidden");
+          currentBtn.setAttribute("aria-expanded", "false");
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const currentBtn = document.getElementById("lang-dropdown-btn");
+          const currentMenu = document.getElementById("lang-dropdown-menu");
+          if (
+            currentBtn &&
+            currentMenu &&
+            currentBtn.getAttribute("aria-expanded") === "true"
+          ) {
+            currentMenu.classList.add("hidden");
+            currentBtn.setAttribute("aria-expanded", "false");
+            currentBtn.focus();
+          }
+        }
+      });
+    }
   }
   setupLangDropdown();
   document.addEventListener("astro:after-swap", setupLangDropdown);

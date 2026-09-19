@@ -10,6 +10,8 @@ export default {
     title: "现代 TypeScript 国际化方案",
     getStarted: "开始使用",
     github: "GitHub",
+    astroBadge: "Astro 集成已推出",
+    astroIntegration: "Astro 集成指南",
     tabAstro: "Component.astro",
     tabMessages: "zh-Hans.ts",
     tabConfig: "i18n.ts",

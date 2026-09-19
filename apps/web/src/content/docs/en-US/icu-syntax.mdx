@@ -1,19 +1,19 @@
 ---
-title: "ICU Message Syntax & Rich Text"
-description: "Pluralization, ordinals, conditional selection, and rich text markup."
+title: "ICU Syntax & Rich Text Rendering"
+description: "Plural rules, ordinals, conditional branches, and rich text component rendering syntax."
 order: 4
 lang: "en-US"
 ---
 
-# ICU Message Syntax & Rich Text
+# ICU Syntax & Rich Text Rendering
 
-`ts-intl` supports standard ICU MessageFormat 1.x features without third-party parser dependencies.
+`ts-intl` supports standard ICU MessageFormat 1.x syntax.
 
-## Pluralization
+## Plural Support (Pluralization)
 
 ### Structured Plural Objects
 
-Define object keys matching CLDR categories (`zero`, `one`, `two`, `few`, `many`, `other`):
+Supports nested object forms following CLDR standard plural categories (`zero`, `one`, `two`, `few`, `many`, `other`):
 
 ```ts
 const messages = {
@@ -30,6 +30,8 @@ t("cart", { count: 0 }); // "Your cart is empty"
 t("cart", { count: 1 }); // "1 item in your cart"
 t("cart", { count: 8 }); // "8 items in your cart"
 ```
+
+> **Note**: In the CLDR specification, English only defines the `one` and `other` plural categories (`ts-intl` additionally provides built-in support for `zero` when `count === 0`). If you need differentiated text for specific numbers, it is recommended to use the inline ICU `plural` syntax below (such as `=0`).
 
 ### Inline ICU `plural` Syntax
 
@@ -48,7 +50,7 @@ t("inbox", { count: 12 }); // "You have 12 messages."
 
 ## Ordinal Formatting (`selectordinal`)
 
-Ordinal numbers (`1st`, `2nd`, `3rd`, `4th`) are handled with exact matching priority (`=1`, `=2`) and fallback categories:
+Used to handle ordinal expressions (exact match `=` takes precedence over category rules):
 
 ```ts
 const messages = {
@@ -62,9 +64,9 @@ t("podium", { rank: 1 }); // "You finished first!"
 t("podium", { rank: 4 }); // "You finished 4th!"
 ```
 
-## Conditional Selection (`select`)
+## Conditional Branch Selection (`select`)
 
-Branch based on enum values or states:
+Matches different text based on status enums or category values:
 
 ```ts
 const messages = {
@@ -78,30 +80,32 @@ t("roleBadge", { role: "admin" }); // "Administrator"
 t("roleBadge", { role: "guest" }); // "Member"
 ```
 
-## Rich Text Interpolation `t.rich()`
+## General Rich Text Interpolation `t.rich()`
 
-Map text containing XML-style tags to interactive components or DOM elements without using `dangerouslySetInnerHTML`:
+Maps text to frontend components or DOM nodes via XML-like tags, avoiding the XSS risks of using `dangerouslySetInnerHTML`:
 
 ```ts
 const messages = {
-  terms: "Please accept our <link>Terms of Service</link> to continue.",
+  notice:
+    "Please review our <terms>Terms of Service</terms> and accept the <privacy>Privacy Policy</privacy> before submitting.",
 } as const;
 
 const t = getTranslations("en-US");
 
-// In React / JSX:
-const element = t.rich("terms", {
-  link: (children) => <a href="/terms" className="underline">{children}</a>,
+// Map directly to components in React / Vue
+const elements = t.rich("notice", {
+  terms: (children) => <a href="/terms" className="underline">{children}</a>,
+  privacy: (children) => <a href="/privacy" className="underline">{children}</a>,
 });
 ```
 
-## HTML String Markup `t.markup()`
+## HTML String Markup Rendering `t.markup()`
 
-Generate strings containing safe HTML tags:
+Used to generate strings containing safe HTML tags:
 
 ```ts
-const html = t.markup("terms", {
-  link: (children) => `<a href="/terms">${children}</a>`,
+const html = t.markup("notice", {
+  terms: (c) => `<a href="/terms">${c}</a>`,
+  privacy: (c) => `<a href="/privacy">${c}</a>`,
 });
-// Output: 'Please accept our <a href="/terms">Terms of Service</a> to continue.'
 ```

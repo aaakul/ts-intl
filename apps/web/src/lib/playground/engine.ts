@@ -1,6 +1,7 @@
 import loader from "@monaco-editor/loader";
 import { transform } from "sucrase";
 import { h, Fragment, render } from "preact";
+import * as preactHooks from "preact/hooks";
 import * as tsIntl from "@aaakul/ts-intl";
 import { TEMPLATES } from "./templates";
 
@@ -255,6 +256,27 @@ export async function createPlayground(
         ) {
           return { __esModule: true, default: messagesData, ...messagesData };
         }
+        if (specifier === "preact") {
+          return {
+            __esModule: true,
+            default: { h, Fragment, render },
+            h,
+            Fragment,
+            render,
+          };
+        }
+        if (specifier === "preact/hooks") {
+          return { __esModule: true, default: preactHooks, ...preactHooks };
+        }
+        if (specifier === "react") {
+          return {
+            __esModule: true,
+            default: { createElement: h, Fragment, ...preactHooks },
+            createElement: h,
+            Fragment,
+            ...preactHooks,
+          };
+        }
         throw new Error(`Module '${specifier}' is not available in sandbox`);
       };
 
@@ -375,11 +397,8 @@ export async function createPlayground(
     }, 300);
   }
 
-  messagesModel.onDidChangeContent(scheduleRun);
-  appModel.onDidChangeContent(() => {
-    highlightJsx();
-    scheduleRun();
-  });
+  const messagesSub = messagesModel.onDidChangeContent(scheduleRun);
+  const appSub = appModel.onDidChangeContent(scheduleRun);
 
   // Initial execution
   runCode();
@@ -405,8 +424,13 @@ export async function createPlayground(
     destroy() {
       observer.disconnect();
       if (debounceTimer) clearTimeout(debounceTimer);
+      messagesSub.dispose();
+      appSub.dispose();
       jsxDecorations = editor.deltaDecorations(jsxDecorations, []);
+      render(null, previewContainer);
       editor.dispose();
+      messagesModel.dispose();
+      appModel.dispose();
     },
   };
 }

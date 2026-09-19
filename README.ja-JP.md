@@ -14,6 +14,10 @@
 - **フレームワーク非依存（Framework Agnostic）**: ブラウザ、Node.js、Bun など、あらゆる JavaScript / TypeScript 環境でシームレスに動作します。
 - **厳格な型安全性（Strict Type Safety）**: 翻訳キー、パラメータ、名前空間のすべてにおいて、TypeScript の完全な型推論と自動補完を提供します。
 
+## エコシステム・フレームワーク統合
+
+- **Astro**: [`ts-intl-astro`](./packages/ts-intl-astro/README.ja-JP.md) - 軽量・ゼロ設定・厳格な型安全性を備えた公式 Astro インテグレーション。
+
 ## インストール
 
 ```bash

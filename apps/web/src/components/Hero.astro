@@ -2,50 +2,66 @@
 import Icon from "./Icon.astro";
 import Playground from "./Playground.astro";
 import { SITE_CONFIG } from "@/config/site";
-import { getTranslations, type SupportedLanguage } from "@/i18n";
+import { useTranslations, useLocale } from "@/i18n";
 
-interface Props {
-  lang: SupportedLanguage;
-}
-
-const { lang } = Astro.props;
-const t = getTranslations(lang, "hero");
+const t = useTranslations("hero");
+const lang = useLocale();
 ---
 
 <section
-  class="relative min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-10 overflow-hidden border-b border-neutral-200 dark:border-neutral-800"
+  class="relative min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-3 sm:py-4 lg:py-5 overflow-hidden border-b border-neutral-200 dark:border-neutral-800"
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-auto">
-    <div class="text-center mx-auto mb-5 sm:mb-6 lg:mb-8">
+    <div class="text-center mx-auto mb-3 sm:mb-4 lg:mb-5">
+      <div
+        class="mb-2 sm:mb-2.5 inline-flex items-center gap-2 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+      >
+        <span
+          class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse"
+        ></span>
+        <span>{t("astroBadge")}</span>
+        <span class="text-neutral-300 dark:text-neutral-700">|</span>
+        <a
+          href={`/${lang}/docs/astro-integration`}
+          class="font-mono text-neutral-900 dark:text-white hover:underline inline-flex items-center gap-1 font-semibold"
+        >
+          <span>ts-intl-astro</span>
+          <Icon name="external-link" class="w-3 h-3 text-neutral-400" />
+        </a>
+      </div>
+
       <h1
-        class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-neutral-950 dark:text-white leading-[1.15] mb-2 sm:mb-3"
+        class="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-neutral-950 dark:text-white leading-[1.15] mb-1.5 sm:mb-2"
       >
         {t("title")}
       </h1>
 
       <p
-        class="text-xs sm:text-sm md:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto"
+        class="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto"
       >
         {t("badge")}
       </p>
 
       <div
-        class="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-3"
+        class="mt-2.5 sm:mt-3.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3"
       >
         <a
           href={`/${lang}/docs/overview-and-installation`}
-          class="inline-flex items-center justify-center px-5 py-2.5 rounded-md text-xs font-medium text-white dark:text-neutral-950 bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+          class="inline-flex items-center justify-center px-4 py-1.5 sm:px-5 sm:py-2 rounded-md text-xs font-medium text-white dark:text-neutral-950 bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
         >
           {t("getStarted")}
         </a>
         <a
           href={SITE_CONFIG.githubUrl}
           target="_blank"
-          rel="noreferrer"
-          class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md text-xs font-medium text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+          rel="noopener noreferrer"
+          class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-1.5 sm:px-5 sm:py-2 rounded-md text-xs font-medium text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
         >
           <span>{t("github")}</span>
-          <Icon name="external-link" class="w-3.5 h-3.5 text-neutral-400" />
+          <Icon
+            name="external-link"
+            class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400"
+          />
         </a>
       </div>
     </div>

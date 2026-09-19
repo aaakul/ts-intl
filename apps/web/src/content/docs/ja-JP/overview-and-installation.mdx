@@ -7,15 +7,15 @@ lang: "ja-JP"
 
 # 概要とインストール
 
-`ts-intl` は、軽量・ゼロ依存・厳格な型安全性を備えたモダン TypeScript 向けの国際化（i18n）ライブラリです。
+`ts-intl` は、ゼロ依存・フレームワーク非依存・厳格な型安全性を備えた国際化（i18n）ライブラリです。
 
-`next-intl` にインスパイアされた API 設計を採用し、Next.js や特定の UI フレームワークに依存せず動作します。
+`next-intl` に似た API 設計を採用し、Next.js や特定の UI フレームワークに依存せず、モダンな TypeScript 開発に適しています。
 
 ## 設計原則
 
-- **ゼロ依存（Zero Dependencies）**: ランタイム依存関係ゼロ。ビルド時のコード生成ステップも不要です。
-- **フレームワーク非依存（Framework Agnostic）**: Astro、React、Vue、Svelte、Node.js、Bun、Cloudflare Workers、ブラウザ環境でそのまま動作します。
-- **厳格な型安全性（Strict Type Safety）**: 翻訳キー、変数プレースホルダー、名前空間、言語辞書構造の整合性を TypeScript がコンパイル時に検証します。
+- **ゼロ依存**：ランタイム依存ゼロ、ビルド時のコード生成ステップも不要です。
+- **フレームワーク非依存**：Astro、React、Vue、Svelte、Node.js、Bun、およびブラウザ等の実行環境をサポートします。
+- **厳格な型安全性**：翻訳キー、動的補間パラメータ、名前空間、多言語構造の整合性に静的型チェックを提供します。
 
 ## インストール
 
@@ -39,7 +39,7 @@ bun add @aaakul/ts-intl
 
 ### 1. 翻訳辞書の定義
 
-`as const` を付与して静的型推論を有効にします：
+`as const` で TypeScript オブジェクトをアサーションし、型システムがキー名とパラメータ型を推論できるようにします：
 
 ```ts
 // messages/ja-JP.ts
@@ -94,34 +94,34 @@ export const {
 export type Language = (typeof languages)[number];
 ```
 
-### 3. 型安全な翻訳の実行
+### 3. 翻訳関数の取得と呼び出し
 
 ```ts
 import { getTranslations } from "./i18n";
 
 const t = getTranslations("ja-JP", "common");
 
-// 1. 静的テキスト
+// 1. 静的キー
 const title = t("title");
 // 推論型: (key: "title") => string
 // 出力: "システムダッシュボード"
 
-// 2. パラメータ補間
+// 2. パラメータ付き補間
 const greeting = t("greeting", { name: "開発者" });
 // 推論型: (key: "greeting", params: { name: string }) => string
 // 出力: "こんにちは、開発者さん！"
 
-// 3. 複数形対応
+// 3. 複数形ルールの処理
 const items = t("items", { count: 5 });
 // 推論型: (key: "items", params: { count: number }) => string
 // 出力: "合計 5 件のデータ"
 ```
 
-## サポートされる辞書形式
+## 辞書フォーマットのサポート
 
 ### TypeScript 静的定義（推奨）
 
-`as const` を使用することで、プレースホルダー型（`{name: string}`）を含む静的型付けと補完を利用できます：
+`as const` で辞書を定義することで、コンパイル時のキー名検証とパラメータ型の抽出をサポートします：
 
 ```ts
 export default {
@@ -132,9 +132,9 @@ export default {
 } as const;
 ```
 
-### JSON 形式の辞書
+### JSON 辞書フォーマット
 
-`createI18n` はビルドプラグイン不要で `.json` ファイルを辞書として直接読み込めます：
+_説明_：JSON 形式でもキー名の自動補完とスペルチェックを同様にサポートします。JSON 自体は `as const` をサポートしないため、テンプレート変数のパラメータはワイド型（広範な型）として推論されます。
 
 ```ts
 import jaJP from "./messages/ja-JP.json";
@@ -145,5 +145,3 @@ export const { getTranslations } = createI18n({
   messages: { "ja-JP": jaJP, "en-US": enUS },
 });
 ```
-
-_注意_: JSON 辞書でもキーや名前空間の補完と検証が機能します。JSON 自体に `as const` がないため、パラメータは柔軟な型推論となります。

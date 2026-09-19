@@ -1,0 +1,195 @@
+---
+title: "Astro 統合"
+description: "ts-intl-astro による Props バケツリレーの回避、コンテキストとミドルウェアに基づく Astro 向け国際化対応。"
+order: 7
+lang: "ja-JP"
+---
+
+# Astro 統合 (ts-intl-astro)
+
+`ts-intl-astro` は、コアライブラリ `@aaakul/ts-intl` をベースにした Astro 向け国際化インテグレーションパッケージです。非同期コンテキスト管理（`AsyncLocalStorage`）によりリクエスト言語状態を保持し、コンポーネントツリー内での言語引数のバケツリレー（Prop Drilling）を回避します。
+
+## 主な特徴
+
+- **Props バケツリレーの回避**: Node.js および最新ランタイム標準の `AsyncLocalStorage` と Astro ミドルウェア機構により、コンポーネントツリー内で直接 `useTranslations()` を呼び出して現在のリクエスト言語の翻訳関数を取得できます。
+- **ミドルウェアの自動注入**: `astro.config.mjs` にインテグレーションを登録すると、Astro レンダリングパイプラインに事前ミドルウェア（Pre-middleware）が自動注入され、現在のページの言語を解決します。`context.currentLocale`、ルーティングパラメータ（`[lang]`、`[locale]`）、および URL パス解析をサポートします。
+- **厳格な型安全性**: `ts-intl` のコンパイル時完全型推論を継承し、名前空間の制約、キー名の自動補完、ICU パラメータ検証、多言語辞書のスキーマ整合性チェックに対応します。
+
+## インストール
+
+Astro プロジェクトに `ts-intl-astro` とその依存パッケージをインストールします：
+
+```bash
+pnpm add ts-intl-astro
+# または
+npm install ts-intl-astro
+# または
+yarn add ts-intl-astro
+```
+
+## クイック設定
+
+### 1. i18n インスタンスの初期化
+
+プロジェクトの `src/i18n/index.ts` で翻訳 Hooks とインスタンス設定を作成・エクスポートします：
+
+```ts
+// src/i18n/index.ts
+import { createAstroI18n } from "ts-intl-astro";
+import enUS from "./messages/en-US";
+import jaJP from "./messages/ja-JP";
+
+export const {
+  useTranslations,
+  useLocale,
+  useFormatter,
+  languages,
+  defaultLanguage,
+} = createAstroI18n({
+  defaultLanguage: "ja-JP",
+  messages: {
+    "ja-JP": jaJP,
+    "en-US": enUS,
+  },
+});
+
+export type SupportedLanguage = (typeof languages)[number];
+```
+
+### 2. Astro インテグレーションの登録
+
+プロジェクトの `astro.config.mjs` で `tsIntl` をインポートして有効化します：
+
+```js
+// astro.config.mjs
+import { defineConfig } from "astro/config";
+import tsIntl from "ts-intl-astro";
+
+export default defineConfig({
+  integrations: [tsIntl()],
+});
+```
+
+このインテグレーションは、Astro のビルド時および実行時にコンテキストミドルウェアを自動登録します。ページがリクエストを処理または静的ページを生成する際、ミドルウェアがルート言語を解決し、現在のアクティブなコンテキストをリクエストスコープに注入します。
+
+## コンポーネントでの利用
+
+コンテキストミドルウェアにより、コンポーネント内部で `lang` プロパティを宣言または受け取る必要がなくなります：
+
+### 基本的な使い方
+
+```astro
+---
+// src/components/Header.astro
+import { useTranslations, useLocale } from "@/i18n";
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<header class="flex items-center justify-between p-4">
+  <nav class="space-x-4">
+    <a href={`/${lang}`}>{t("home")}</a>
+    <a href={`/${lang}/docs`}>{t("docs")}</a>
+    <a href={`/${lang}/pricing`}>{t("pricing")}</a>
+  </nav>
+</header>
+```
+
+### 明示的な言語の上書き
+
+特定の独立したコンポーネントを指定言語で強制的に描画する必要がある場合（言語切り替えドロップダウンのプレビューなど）、`{ locale }` オプションを渡して上書きできます：
+
+```astro
+---
+import { useTranslations } from "@/i18n";
+
+const tEn = useTranslations("hero", { locale: "en-US" });
+---
+
+<p>{tEn("title")}</p>
+```
+
+### フォーマッターの利用
+
+`useFormatter()` を呼び出して、現在の言語環境にバインドされた Web `Intl` フォーマッターを取得します：
+
+```astro
+---
+import { useFormatter } from "@/i18n";
+
+const fmt = useFormatter();
+const formattedPrice = fmt.number(12800, { style: "currency", currency: "JPY" });
+const formattedDate = fmt.dateTime(new Date(), { dateStyle: "long" });
+---
+
+<div>
+  <span>{formattedPrice}</span>
+  <time>{formattedDate}</time>
+</div>
+```
+
+## ルートセグメントの設定と利用（Route Segments）
+
+動的ルートセグメントを用いて多言語ページ構造を管理することが推奨されます。例えば `src/pages/[lang]/index.astro` や `src/pages/[locale]/about.astro` のように構成します。
+
+### 静的ルート生成（SSG）
+
+静的サイト生成（SSG）モードでは、エクスポートされた `languages` 配列を組み合わせて `getStaticPaths()` を定義します：
+
+```astro
+---
+// src/pages/[lang]/index.astro
+import { languages, useTranslations, useLocale } from "@/i18n";
+
+export function getStaticPaths() {
+  return languages.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<nav>
+  <a href={`/${lang}`}>{t("home")}</a>
+  <a href={`/${lang}/docs`}>{t("docs")}</a>
+</nav>
+```
+
+### ルートセグメントの解決機構
+
+- **デフォルトのルートパラメータ名**: ミドルウェアはデフォルトで動的ルーティングパラメータ `context.params.lang` および `context.params.locale` を自動検出します。ディレクトリ名が `[lang]` または `[locale]` であれば、追加設定なしで自動認識されます。
+- **Props 不要のコンテキスト注入**: ミドルウェアがページおよび子コンポーネントの描画前にルートセグメントから言語を抽出して非同期スコープに格納します。ページ内のどれほど深くネストされた子コンポーネントであっても直接 `useTranslations()` や `useLocale()` を呼び出すだけで対応言語を取得でき、ページから子コンポーネントへの階層的な Props バケツリレー（Prop Drilling）を完全に解消します。
+- **カスタムルートパラメータ名**: ルートディレクトリで別の動的パラメータ名（例：`src/pages/[localeCode]/...`）を使用している場合は、`createAstroI18n` の `paramNames` オプションで設定可能です：
+
+```ts
+export const {
+  /* ... */
+} = createAstroI18n({
+  defaultLanguage: "ja-JP",
+  paramNames: ["localeCode", "lang", "locale"],
+  messages: {
+    /* ... */
+  },
+});
+```
+
+## 言語解決戦略
+
+`ts-intl-astro` は以下の優先順位に従って現在のリクエスト言語を順次解決します：
+
+1. **Astro 組み込み `context.currentLocale`**（Astro i18n ルーティング）
+2. **ルーティング動的パラメータ**（デフォルトで `context.params.lang` および `context.params.locale` を検出、`paramNames` でカスタマイズ可能）
+3. **URL パスプレフィックス解析**（例：`/ja-JP/...` から先頭パスを抽出）
+4. **デフォルト言語へのフォールバック**（設定で指定された `defaultLanguage`）
+
+## API リファレンス
+
+| API                           | 型                | 説明                                                                                           |
+| :---------------------------- | :---------------- | :--------------------------------------------------------------------------------------------- |
+| `createAstroI18n(config)`     | `Function`        | Astro 専用 i18n インスタンスを初期化し、`defaultLanguage`・`messages`・`paramNames` を設定可能 |
+| `useTranslations(ns?, opts?)` | `Function`        | 現在のレンダリングコンテキストにバインドされた翻訳関数 `t` を取得                              |
+| `useLocale()`                 | `() => string`    | 現在のレンダリングコンテキストのアクティブな言語コードを取得                                   |
+| `useFormatter(opts?)`         | `() => Formatter` | 現在の言語に紐づくキャッシュ済み Web `Intl` フォーマッターを取得                               |

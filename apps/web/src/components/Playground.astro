@@ -113,14 +113,14 @@ const preview = staticPreviews[lang] || staticPreviews["en-US"];
   </div>
 
   <div
-    class="grid grid-cols-1 lg:grid-cols-12 min-h-[380px] sm:min-h-[400px] relative rounded-b-lg"
+    class="grid grid-cols-1 lg:grid-cols-12 min-h-[360px] sm:min-h-[380px] relative rounded-b-lg"
   >
     <div
       class="lg:col-span-7 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-neutral-800 flex flex-col bg-white dark:bg-neutral-950 relative"
     >
       <div
         id="pg-static-fallback"
-        class="w-full h-[380px] sm:h-[400px] overflow-auto p-4 font-mono text-xs bg-white dark:bg-neutral-950"
+        class="w-full h-[360px] sm:h-[380px] overflow-auto p-4 font-mono text-xs bg-white dark:bg-neutral-950"
       >
         <Code
           code={initialTemplate.messages}
@@ -129,7 +129,7 @@ const preview = staticPreviews[lang] || staticPreviews["en-US"];
         />
       </div>
 
-      <div id="pg-editor-mount" class="w-full h-[380px] sm:h-[400px] hidden">
+      <div id="pg-editor-mount" class="w-full h-[360px] sm:h-[380px] hidden">
       </div>
     </div>
 
@@ -396,8 +396,69 @@ const preview = staticPreviews[lang] || staticPreviews["en-US"];
     const eb = errorBar;
     const et = errorText;
 
+    if ((window as any).__heroPlaygroundInstance) {
+      try {
+        (window as any).__heroPlaygroundInstance.destroy();
+      } catch (e) {}
+      (window as any).__heroPlaygroundInstance = null;
+    }
+
+    let currentTab: "messages" | "app" = "messages";
     let isInitialized = false;
     let playgroundInstance: any = null;
+
+    const activeClasses = [
+      "text-neutral-900",
+      "dark:text-white",
+      "bg-white",
+      "dark:bg-neutral-800",
+      "border",
+      "border-neutral-200",
+      "dark:border-neutral-700",
+      "shadow-xs",
+    ];
+    const inactiveClasses = [
+      "text-neutral-500",
+      "dark:text-neutral-400",
+      "hover:text-neutral-900",
+      "dark:hover:text-neutral-200",
+    ];
+
+    function updateTabUI(tab: "messages" | "app") {
+      currentTab = tab;
+      if (tab === "messages") {
+        tabMessages?.classList.add(...activeClasses);
+        tabMessages?.classList.remove(...inactiveClasses);
+        tabMessages?.setAttribute("aria-selected", "true");
+
+        tabApp?.classList.remove(...activeClasses);
+        tabApp?.classList.add(...inactiveClasses);
+        tabApp?.setAttribute("aria-selected", "false");
+      } else {
+        tabApp?.classList.add(...activeClasses);
+        tabApp?.classList.remove(...inactiveClasses);
+        tabApp?.setAttribute("aria-selected", "true");
+
+        tabMessages?.classList.remove(...activeClasses);
+        tabMessages?.classList.add(...inactiveClasses);
+        tabMessages?.setAttribute("aria-selected", "false");
+      }
+    }
+
+    function switchTab(tab: "messages" | "app") {
+      updateTabUI(tab);
+      activatePlayground();
+      if (playgroundInstance) {
+        playgroundInstance.setTab(tab);
+      }
+    }
+
+    tabMessages?.addEventListener("click", () => switchTab("messages"));
+    tabApp?.addEventListener("click", () => switchTab("app"));
+
+    resetBtn?.addEventListener("click", () => {
+      if (playgroundInstance) playgroundInstance.reset();
+    });
 
     function activatePlayground() {
       if (isInitialized) return;
@@ -420,53 +481,10 @@ const preview = staticPreviews[lang] || staticPreviews["en-US"];
         })
         .then((instance) => {
           playgroundInstance = instance;
-
-          function switchTab(tab: "messages" | "app") {
-            if (!playgroundInstance) return;
-            playgroundInstance.setTab(tab);
-
-            const activeClasses = [
-              "text-neutral-900",
-              "dark:text-white",
-              "bg-white",
-              "dark:bg-neutral-800",
-              "border",
-              "border-neutral-200",
-              "dark:border-neutral-700",
-              "shadow-xs",
-            ];
-            const inactiveClasses = [
-              "text-neutral-500",
-              "dark:text-neutral-400",
-              "hover:text-neutral-900",
-              "dark:hover:text-neutral-200",
-            ];
-
-            if (tab === "messages") {
-              tabMessages?.classList.add(...activeClasses);
-              tabMessages?.classList.remove(...inactiveClasses);
-              tabMessages?.setAttribute("aria-selected", "true");
-
-              tabApp?.classList.remove(...activeClasses);
-              tabApp?.classList.add(...inactiveClasses);
-              tabApp?.setAttribute("aria-selected", "false");
-            } else {
-              tabApp?.classList.add(...activeClasses);
-              tabApp?.classList.remove(...inactiveClasses);
-              tabApp?.setAttribute("aria-selected", "true");
-
-              tabMessages?.classList.remove(...activeClasses);
-              tabMessages?.classList.add(...inactiveClasses);
-              tabMessages?.setAttribute("aria-selected", "false");
-            }
+          (window as any).__heroPlaygroundInstance = instance;
+          if (currentTab !== "messages") {
+            playgroundInstance.setTab(currentTab);
           }
-
-          tabMessages?.addEventListener("click", () => switchTab("messages"));
-          tabApp?.addEventListener("click", () => switchTab("app"));
-
-          resetBtn?.addEventListener("click", () => {
-            if (playgroundInstance) playgroundInstance.reset();
-          });
         })
         .catch((err) => {
           console.error("[playground] Activation error:", err);
@@ -476,8 +494,6 @@ const preview = staticPreviews[lang] || staticPreviews["en-US"];
 
     root.addEventListener("mouseenter", activatePlayground, { once: true });
     root.addEventListener("focusin", activatePlayground, { once: true });
-    tabMessages?.addEventListener("click", activatePlayground, { once: true });
-    tabApp?.addEventListener("click", activatePlayground, { once: true });
 
     if ("requestIdleCallback" in window) {
       (window as any).requestIdleCallback(activatePlayground, {

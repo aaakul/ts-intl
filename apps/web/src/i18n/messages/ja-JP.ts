@@ -10,6 +10,8 @@ export default {
     title: "モダン TypeScript 向け国際化ライブラリ",
     getStarted: "利用を開始",
     github: "GitHub",
+    astroBadge: "Astro 統合に対応",
+    astroIntegration: "Astro 統合ガイド",
     tabAstro: "Component.astro",
     tabMessages: "ja-JP.ts",
     tabConfig: "i18n.ts",

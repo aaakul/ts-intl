@@ -1,0 +1,195 @@
+---
+title: "Astro 集成"
+description: "使用 ts-intl-astro 为 Astro 项目提供基于上下文与中间件的国际化支持，避免组件层级中的属性透传。"
+order: 7
+lang: "zh-Hans"
+---
+
+# Astro 集成 (ts-intl-astro)
+
+`ts-intl-astro` 是面向 Astro 的国际化集成包，基于核心库 `@aaakul/ts-intl` 构建。通过异步上下文管理（`AsyncLocalStorage`）存储当前请求的语言状态，避免组件树中逐层传递语言参数（Prop Drilling）。
+
+## 核心特性
+
+- **避免 Prop Drilling**：基于 Node.js 与标准运行时的 `AsyncLocalStorage` 和 Astro 中间件机制，在组件树中直接调用 `useTranslations()` 获取当前请求语言的翻译函数。
+- **中间件自动注入**：在 `astro.config.mjs` 中注册集成后，会自动向 Astro 渲染管道注入前置中间件（Pre-middleware），解析当前页面的语言标识。支持 `context.currentLocale`、路由参数（`[lang]` `[locale]`）及 URL 路径分析。
+- **严格类型安全**：继承 `ts-intl` 的编译期全类型推断，包含命名空间约束、键名自动补全、ICU 参数校验与跨语言词典结构对齐校验。
+
+## 安装
+
+在 Astro 项目中安装 `ts-intl-astro` 及其依赖：
+
+```bash
+pnpm add ts-intl-astro
+# 或
+npm install ts-intl-astro
+# 或
+yarn add ts-intl-astro
+```
+
+## 快速配置
+
+### 1. 初始化 i18n 实例
+
+在项目目录 `src/i18n/index.ts` 中创建并导出翻译 Hooks 与实例配置：
+
+```ts
+// src/i18n/index.ts
+import { createAstroI18n } from "ts-intl-astro";
+import enUS from "./messages/en-US";
+import zhHans from "./messages/zh-Hans";
+
+export const {
+  useTranslations,
+  useLocale,
+  useFormatter,
+  languages,
+  defaultLanguage,
+} = createAstroI18n({
+  defaultLanguage: "zh-Hans",
+  messages: {
+    "zh-Hans": zhHans,
+    "en-US": enUS,
+  },
+});
+
+export type SupportedLanguage = (typeof languages)[number];
+```
+
+### 2. 注册 Astro 集成
+
+在项目的 `astro.config.mjs` 中引入并启用 `tsIntl`：
+
+```js
+// astro.config.mjs
+import { defineConfig } from "astro/config";
+import tsIntl from "ts-intl-astro";
+
+export default defineConfig({
+  integrations: [tsIntl()],
+});
+```
+
+该集成在 Astro 构建与运行阶段自动注册上下文中间件。当页面处理请求或生成静态页面时，中间件解析路由语言并将当前上下文注入请求作用域。
+
+## 在组件中使用
+
+通过上下文中间件，组件内部无需声明或接收 `lang` 属性：
+
+### 基础用法
+
+```astro
+---
+// src/components/Header.astro
+import { useTranslations, useLocale } from "@/i18n";
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<header class="flex items-center justify-between p-4">
+  <nav class="space-x-4">
+    <a href={`/${lang}`}>{t("home")}</a>
+    <a href={`/${lang}/docs`}>{t("docs")}</a>
+    <a href={`/${lang}/pricing`}>{t("pricing")}</a>
+  </nav>
+</header>
+```
+
+### 显式覆盖语言
+
+如果某个独立组件需要强制渲染为特定语言（例如语言切换下拉列表的预览），可传入 `{ locale }` 选项进行覆盖：
+
+```astro
+---
+import { useTranslations } from "@/i18n";
+
+const tEn = useTranslations("hero", { locale: "en-US" });
+---
+
+<p>{tEn("title")}</p>
+```
+
+### 使用格式化器
+
+调用 `useFormatter()` 获取当前语言环境下的 Web `Intl` 格式化器：
+
+```astro
+---
+import { useFormatter } from "@/i18n";
+
+const fmt = useFormatter();
+const formattedPrice = fmt.number(1299, { style: "currency", currency: "CNY" });
+const formattedDate = fmt.dateTime(new Date(), { dateStyle: "medium" });
+---
+
+<div>
+  <span>{formattedPrice}</span>
+  <time>{formattedDate}</time>
+</div>
+```
+
+## 路由段配置与使用（Route Segments）
+
+推荐使用动态路由段来组织多语言页面结构，例如 `src/pages/[lang]/index.astro` 或 `src/pages/[locale]/about.astro`。
+
+### 静态路由生成（SSG）
+
+在静态站点生成模式下，结合导出的 `languages` 数组定义 `getStaticPaths()`：
+
+```astro
+---
+// src/pages/[lang]/index.astro
+import { languages, useTranslations, useLocale } from "@/i18n";
+
+export function getStaticPaths() {
+  return languages.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<nav>
+  <a href={`/${lang}`}>{t("home")}</a>
+  <a href={`/${lang}/docs`}>{t("docs")}</a>
+</nav>
+```
+
+### 路由段解析机制
+
+- **默认路由段参数名**：中间件默认自动检测动态路由参数 `context.params.lang` 与 `context.params.locale`。只要目录名为 `[lang]` 或 `[locale]`，即可零配置自动识别。
+- **免传参上下文注入**：中间件在进入页面和子组件渲染前，便已从路由段提取出语言并存入异步作用域。页面内所有深层子组件直接调用 `useTranslations()` 或 `useLocale()` 即可获得对应语言，彻底消除从页面到子组件的逐层属性透传（Prop Drilling）。
+- **自定义路由段参数名**：若路由目录使用了其他参数名（例如 `src/pages/[localeCode]/...`），可通过 `createAstroI18n` 的 `paramNames` 选项进行配置：
+
+```ts
+export const {
+  /* ... */
+} = createAstroI18n({
+  defaultLanguage: "zh-Hans",
+  paramNames: ["localeCode", "lang", "locale"],
+  messages: {
+    /* ... */
+  },
+});
+```
+
+## 语言解析策略
+
+`ts-intl-astro` 会按以下优先级依次解析当前请求的语言：
+
+1. **Astro 内置 `context.currentLocale`**（Astro i18n 路由）
+2. **路由动态参数**（默认检测 `context.params.lang` 和 `context.params.locale`，可通过 `paramNames` 自定义）
+3. **URL 路径前缀分析**（例如 `/zh-Hans/...` 提取首段路径）
+4. **默认语言回退**（配置中指定的 `defaultLanguage`）
+
+## API 参考
+
+| API                           | 类型              | 说明                                                                                |
+| :---------------------------- | :---------------- | :---------------------------------------------------------------------------------- |
+| `createAstroI18n(config)`     | `Function`        | 初始化 Astro 专用 i18n 实例，支持配置 `defaultLanguage`、`messages` 与 `paramNames` |
+| `useTranslations(ns?, opts?)` | `Function`        | 获取绑定至当前渲染上下文的翻译函数 `t`                                              |
+| `useLocale()`                 | `() => string`    | 获取当前渲染上下文的活动语言代码                                                    |
+| `useFormatter(opts?)`         | `() => Formatter` | 获取当前语言绑定的缓存 Web `Intl` 格式化器                                          |

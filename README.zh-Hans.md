@@ -16,6 +16,10 @@
 
 - 严格类型安全：翻译键、参数和命名空间均具备完整的 TypeScript 类型推导。
 
+## 生态与框架集成
+
+- **Astro**: [`ts-intl-astro`](./packages/ts-intl-astro/README.zh-Hans.md) - 轻量、零配置、开箱即用的 Astro 官方集成。
+
 ## 安装
 
 ```bash

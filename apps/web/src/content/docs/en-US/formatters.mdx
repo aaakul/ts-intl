@@ -1,19 +1,19 @@
 ---
-title: "Web Intl Formatters & Caching"
-description: "Type-safe wrappers and instance caching around standard browser Intl formatters."
+title: "Web Intl Formatters"
+description: "Type-safe wrappers and instance-cached formatters based on Web Intl APIs."
 order: 5
 lang: "en-US"
 ---
 
-# Web Intl Formatters & Caching
+# Web Intl Formatters
 
-Repeatedly instantiating `Intl.NumberFormat` or `Intl.DateTimeFormat` creates unnecessary performance overhead. `ts-intl` wraps standard Web Intl APIs with type safety and built-in instance caching.
+Frequently creating `Intl.NumberFormat` or `Intl.DateTimeFormat` instances incurs unnecessary performance overhead. `ts-intl` encapsulates standard Web Intl APIs and provides a built-in instance caching mechanism.
 
-## Accessing Formatters
+## Obtaining Formatter Instances
 
-### Method 1: `getFormatter(lang?)` via `createI18n` (Recommended)
+### Method 1: Obtain `getFormatter` via `createI18n` (Recommended)
 
-Formatters obtain global preset configurations defined during initialization:
+This approach directly inherits preset format rules, timezone, and error handling configurations from the global settings:
 
 ```ts
 import { createI18n } from "@aaakul/ts-intl";
@@ -37,9 +37,9 @@ export const { getTranslations, getFormatter } = createI18n({
 const formatter = getFormatter("en-US");
 ```
 
-### Method 2: Standalone `createFormatter(options)`
+### Method 2: Call `createFormatter(options)` Independently
 
-When operating in standalone utilities or microservices:
+Suitable for standalone components or utility modules that do not depend on a full i18n instance:
 
 ```ts
 import { createFormatter } from "@aaakul/ts-intl";
@@ -52,9 +52,9 @@ const formatter = createFormatter({
 });
 ```
 
-## Formatter Capabilities
+## Core Formatting Features
 
-### Numbers & Currencies
+### Number & Currency Formatting
 
 ```ts
 formatter.number(1234567.89);
@@ -67,7 +67,7 @@ formatter.number(1500000, "compact");
 // "1.5M"
 ```
 
-### Dates & Times
+### Date & Time
 
 ```ts
 formatter.dateTime(new Date(), { dateStyle: "long" });
@@ -77,9 +77,9 @@ formatter.dateTimeRange(new Date("2026-09-01"), new Date("2026-09-05"));
 // "9/1/2026 – 9/5/2026"
 ```
 
-### Relative Time
+### Relative Time Calculation
 
-Computes appropriate time units based on elapsed time:
+Automatically matches time units based on the time difference:
 
 ```ts
 const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -87,12 +87,15 @@ formatter.relativeTime(twoHoursAgo);
 // "2 hours ago"
 ```
 
-### Localized Lists & Display Names
+### Lists & Localized Display Names
 
 ```ts
 formatter.list(["TypeScript", "Astro", "UnoCSS"]);
 // "TypeScript, Astro, and UnoCSS"
 
 formatter.displayName("ja-JP", { type: "language" });
+// "Japanese (Japan)"
+
+formatter.displayName("ja", { type: "language" });
 // "Japanese"
 ```

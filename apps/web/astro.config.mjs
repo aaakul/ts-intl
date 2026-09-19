@@ -2,12 +2,14 @@ import { defineConfig } from "astro/config";
 import UnoCSS from "@unocss/astro";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
+import tsIntl from "ts-intl-astro";
 
 export default defineConfig({
   output: "static",
   site: process.env.SITE_URL || "https://ts-intl.pages.dev",
   trailingSlash: "never",
   integrations: [
+    tsIntl(),
     UnoCSS({
       injectReset: true,
     }),
@@ -36,7 +38,8 @@ export default defineConfig({
     },
   },
   vite: {
-    ...(process.env.NODE_ENV === "development"
+    ...(process.env.NODE_ENV === "development" &&
+    (process.env.TUNNEL === "true" || process.env.CLOUDFLARE_TUNNEL)
       ? {
           server: {
             allowedHosts: [".trycloudflare.com"],

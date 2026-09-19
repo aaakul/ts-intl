@@ -10,6 +10,8 @@ export default {
     title: "Internationalization for Modern TypeScript",
     getStarted: "Get Started",
     github: "GitHub",
+    astroBadge: "Astro Integration Available",
+    astroIntegration: "Astro Guide",
     tabAstro: "Component.astro",
     tabMessages: "en-US.ts",
     tabConfig: "i18n.ts",

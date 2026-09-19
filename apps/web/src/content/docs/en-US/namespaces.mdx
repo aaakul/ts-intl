@@ -1,20 +1,19 @@
 ---
 title: "Namespaces & Scoping"
-description: "Organizing translation keys using scoped namespaces and path navigation."
+description: "Organizing translation dictionaries using namespaces and data extraction methods."
 order: 3
 lang: "en-US"
 ---
 
 # Namespaces & Scoping
 
-Modularizing translations into distinct functional domains helps avoid key conflicts and simplifies paths in component code.
+Organizing translation keys by functional module or page avoids key collisions and simplifies call paths.
 
 ## Scoped Translators
 
-Passing a namespace as the second argument to `getTranslations` returns a translation function scoped to that prefix:
+Passing a namespace as the second argument when calling `getTranslations` returns a translation function scoped to that namespace:
 
 ```ts
-// Dictionaries defined with nested objects
 const messages = {
   admin: {
     dashboard: {
@@ -31,9 +30,9 @@ t("metrics"); // "Live Statistics"
 t("refresh"); // "Refresh Data"
 ```
 
-## Root-Level Translators
+## Global Flat Translators
 
-When omitting the namespace parameter, `getTranslations` produces a flat translator capable of traversing any dot-separated path in the dictionary:
+If the namespace parameter is omitted, `getTranslations` returns a root translator supporting nested key access via dot-separated paths:
 
 ```ts
 const t = getTranslations("en-US");
@@ -41,9 +40,9 @@ const t = getTranslations("en-US");
 t("admin.dashboard.metrics"); // "Live Statistics"
 ```
 
-## Extracting Raw Objects with `t.raw()`
+## Extracting Raw Data `t.raw()`
 
-When a component requires structured configuration or lists rather than interpolated strings, use `t.raw()`:
+When you need to directly obtain raw structures such as configuration objects or arrays, you can use `t.raw()`:
 
 ```ts
 const messages = {
@@ -59,9 +58,9 @@ const endpoints = t.raw("config.endpoints");
 // Inferred type: readonly ["api-1.example.com", "api-2.example.com"]
 ```
 
-## Key Existence Checking with `t.has()`
+## Checking Key Existence `t.has()`
 
-Check whether a key exists in the current dictionary without generating missing translation warnings:
+Checks whether a specified key exists in the current language or fallback language without triggering missing key warnings:
 
 ```ts
 const t = getTranslations("en-US", "features");

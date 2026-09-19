@@ -11,7 +11,8 @@
     "check": "astro check"
   },
   "dependencies": {
-    "@aaakul/ts-intl": "workspace:*",
+    "@aaakul/ts-intl": "workspace:^",
+    "ts-intl-astro": "workspace:^",
     "@astrojs/mdx": "^8.0.1",
     "@astrojs/sitemap": "^3.7.4",
     "@monaco-editor/loader": "^1.7.0",

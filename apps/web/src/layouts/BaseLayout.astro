@@ -8,6 +8,7 @@ interface Props {
   description?: string;
   lang: SupportedLanguage;
   canonicalPath?: string;
+  noindex?: boolean;
 }
 
 const {
@@ -15,6 +16,7 @@ const {
   description = "A zero-dependency, framework-agnostic, strictly type-safe i18n library with a developer experience inspired by next-intl.",
   lang,
   canonicalPath = "",
+  noindex = false,
 } = Astro.props;
 
 const siteBase = Astro.site ?? SITE_CONFIG.url;
@@ -41,23 +43,27 @@ const canonicalUrl = new URL(`/${lang}${canonicalPath}`, siteBase).href;
     <!-- SEO Meta Tags -->
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={canonicalUrl} />
-
-    <!-- Multilingual Alternate Hreflang -->
     {
-      languages.map((l) => (
-        <link
-          rel="alternate"
-          hreflang={l}
-          href={new URL(`/${l}${canonicalPath}`, siteBase).href}
-        />
-      ))
+      noindex ? (
+        <meta name="robots" content="noindex, nofollow" />
+      ) : (
+        <>
+          <link rel="canonical" href={canonicalUrl} />
+          {languages.map((l) => (
+            <link
+              rel="alternate"
+              hreflang={l}
+              href={new URL(`/${l}${canonicalPath}`, siteBase).href}
+            />
+          ))}
+          <link
+            rel="alternate"
+            hreflang="x-default"
+            href={new URL(`/en-US${canonicalPath}`, siteBase).href}
+          />
+        </>
+      )
     }
-    <link
-      rel="alternate"
-      hreflang="x-default"
-      href={new URL(`/en-US${canonicalPath}`, siteBase).href}
-    />
 
     <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website" />
@@ -107,9 +113,23 @@ const canonicalUrl = new URL(`/${lang}${canonicalPath}`, siteBase).href;
           button.innerHTML =
             '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>';
           button.onclick = async () => {
-            const code = pre.querySelector("code")?.innerText || pre.innerText;
+            const code = (
+              pre.querySelector("code")?.innerText || pre.innerText
+            ).trim();
             try {
-              await navigator.clipboard.writeText(code.trim());
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(code);
+              } else {
+                const ta = document.createElement("textarea");
+                ta.value = code;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+              }
               button.innerHTML =
                 '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
               button.classList.add("copied");

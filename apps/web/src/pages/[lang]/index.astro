@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar.astro";
 import Hero from "@/components/Hero.astro";
 import Features from "@/components/Features.astro";
 import Footer from "@/components/Footer.astro";
-import { languages, type SupportedLanguage, getTranslations } from "@/i18n";
+import { languages, type SupportedLanguage, useTranslations } from "@/i18n";
 
 export function getStaticPaths() {
   return languages.map((lang) => ({
@@ -13,8 +13,8 @@ export function getStaticPaths() {
 }
 
 const { lang } = Astro.params as { lang: SupportedLanguage };
-const tHero = getTranslations(lang, "hero");
-const tFooter = getTranslations(lang, "footer");
+const tHero = useTranslations("hero");
+const tFooter = useTranslations("footer");
 ---
 
 <BaseLayout
@@ -25,7 +25,7 @@ const tFooter = getTranslations(lang, "footer");
 >
   <Navbar lang={lang} isDocsPage={false} />
   <main>
-    <Hero lang={lang} />
+    <Hero />
     <Features lang={lang} />
   </main>
   <Footer lang={lang} />
