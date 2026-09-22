@@ -1,18 +1,20 @@
-export enum I18nErrorCode {
+export const I18nErrorCode = {
   /** Translation key not found in active or fallback dictionary. */
-  MISSING_MESSAGE = "MISSING_MESSAGE",
+  MISSING_MESSAGE: "MISSING_MESSAGE",
 
   /** Key contains '.', which conflicts with dot-delimited namespace traversal. */
-  INVALID_KEY = "INVALID_KEY",
+  INVALID_KEY: "INVALID_KEY",
 
   /** Tag callback in t.markup returned a non-string value. */
-  INVALID_MESSAGE = "INVALID_MESSAGE",
+  INVALID_MESSAGE: "INVALID_MESSAGE",
 
-  FORMATTING_ERROR = "FORMATTING_ERROR",
+  FORMATTING_ERROR: "FORMATTING_ERROR",
 
   /** Named format preset referenced in ICU expression not found in config.formats. */
-  MISSING_FORMAT = "MISSING_FORMAT",
-}
+  MISSING_FORMAT: "MISSING_FORMAT",
+} as const;
+
+export type I18nErrorCode = (typeof I18nErrorCode)[keyof typeof I18nErrorCode];
 
 export class I18nError extends Error {
   readonly code: I18nErrorCode;

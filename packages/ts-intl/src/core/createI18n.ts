@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createIntlFormatters, LruMap } from "../formatters/cache";
+import { createIntlFormatters } from "../formatters/cache";
 import { createFormatter, type Formatter } from "../formatters/createFormatter";
 import type { Formats, I18nConfig } from "../types/config";
 import type { NamespaceKeys, ValueAtPath } from "../types/paths";
@@ -52,9 +51,15 @@ export function createI18n<
   const getMessageFallback =
     config.getMessageFallback ?? defaultGetMessageFallback;
 
-  validateMessages(messages as Record<string, any>, onError);
+  if (
+    typeof process !== "undefined" &&
+    process.env &&
+    process.env.NODE_ENV !== "production"
+  ) {
+    validateMessages(messages as Record<string, any>, onError);
+  }
 
-  const formattersCache = new LruMap<string, Formatter>(50);
+  const formattersCache = new Map<string, Formatter>();
   const getFormatter = (
     lang: SupportedLanguage | (string & {}) = defaultLanguage,
   ): Formatter => {
@@ -112,12 +117,13 @@ export function createI18n<
     }
   };
 
-  const interpolate = (
+  const render = <R = string>(
     template: string,
     params?: Record<string, any>,
     lang: string = defaultLanguage,
     formatOverrides?: Formats,
-  ): string => {
+    isRich = false,
+  ): string | (string | R)[] => {
     const formatter = formatOverrides
       ? getFormatterWithOverrides(lang, formatOverrides)
       : getFormatter(lang);
@@ -129,33 +135,15 @@ export function createI18n<
       onError,
       escapeTags: hasTags,
     });
+    if (isRich) {
+      return renderRichHierarchy<R>(result, params);
+    }
     if (hasTags) {
-      const tokens = renderRichHierarchy<string>(result, params);
-      result = tokens
+      result = renderRichHierarchy<string>(result, params)
         .map((item) => (item == null ? "" : String(item)))
         .join("");
     }
     return result;
-  };
-
-  const renderRich = <R>(
-    template: string,
-    params?: Record<string, any>,
-    lang: string = defaultLanguage,
-    formatOverrides?: Formats,
-  ): (string | R)[] => {
-    const formatter = formatOverrides
-      ? getFormatterWithOverrides(lang, formatOverrides)
-      : getFormatter(lang);
-    const hasTags = template.includes("<");
-    const templateWithVars = resolveIcu(template, params, lang, {
-      getPluralCategory,
-      getOrdinalCategory,
-      formatter,
-      onError,
-      escapeTags: hasTags,
-    });
-    return renderRichHierarchy<R>(templateWithVars, params);
   };
 
   const isSupportedLanguage = (lang: string): lang is SupportedLanguage => {
@@ -180,57 +168,7 @@ export function createI18n<
     const currentMessages =
       (messages as Record<string, any>)[lang as string] || defaultMessages;
 
-    function resolveMessage(
-      fullKey: string,
-      params?: Record<string, any>,
-    ): { value: string; isMissing: boolean } {
-      let resolved = resolvePath(currentMessages, fullKey);
-      if (
-        (resolved === undefined || resolved === "") &&
-        currentMessages !== defaultMessages
-      ) {
-        resolved = resolvePath(defaultMessages, fullKey);
-      }
-
-      if (resolved === undefined) {
-        const error = new I18nError(
-          I18nErrorCode.MISSING_MESSAGE,
-          `Missing translation for key "${fullKey}" in language "${lang}".`,
-          { key: fullKey, lang: lang as string },
-        );
-        onError(error);
-        return {
-          value: getMessageFallback({
-            error,
-            key: fullKey,
-            lang: lang as string,
-            namespace,
-          }),
-          isMissing: true,
-        };
-      }
-
-      if (
-        resolved &&
-        typeof resolved === "object" &&
-        !Array.isArray(resolved) &&
-        typeof resolved.other === "string"
-      ) {
-        const count = typeof params?.count === "number" ? params.count : 0;
-        if (count === 0 && typeof resolved.zero === "string") {
-          return { value: resolved.zero, isMissing: false };
-        }
-        const category = getPluralCategory(lang as string, count);
-        if (typeof resolved[category] === "string") {
-          return { value: resolved[category], isMissing: false };
-        }
-        return { value: resolved.other, isMissing: false };
-      }
-
-      if (typeof resolved === "string") {
-        return { value: resolved, isMissing: false };
-      }
-
+    function handleMissing(fullKey: string) {
       const error = new I18nError(
         I18nErrorCode.MISSING_MESSAGE,
         `Missing translation for key "${fullKey}" in language "${lang}".`,
@@ -248,6 +186,49 @@ export function createI18n<
       };
     }
 
+    function resolveMessage(
+      fullKey: string,
+      params?: Record<string, any>,
+    ): { value: string; isMissing: boolean } {
+      let resolved = resolvePath(currentMessages, fullKey);
+      if (
+        (resolved === undefined || resolved === "") &&
+        currentMessages !== defaultMessages
+      ) {
+        resolved = resolvePath(defaultMessages, fullKey);
+      }
+
+      if (resolved === undefined) {
+        return handleMissing(fullKey);
+      }
+
+      if (
+        resolved &&
+        typeof resolved === "object" &&
+        !Array.isArray(resolved) &&
+        typeof resolved.other === "string"
+      ) {
+        const count = typeof params?.count === "number" ? params.count : 0;
+        if (count === 0 && typeof resolved.zero === "string") {
+          return { value: resolved.zero, isMissing: false };
+        }
+        const category = getPluralCategory(lang as string, count);
+        return {
+          value:
+            typeof resolved[category] === "string"
+              ? resolved[category]
+              : resolved.other,
+          isMissing: false,
+        };
+      }
+
+      if (typeof resolved === "string") {
+        return { value: resolved, isMissing: false };
+      }
+
+      return handleMissing(fullKey);
+    }
+
     const t = function t(
       key: string,
       params?: Record<string, any>,
@@ -258,7 +239,7 @@ export function createI18n<
       if (isMissing) {
         return value;
       }
-      return interpolate(value, params, lang as string, formats);
+      return render(value, params, lang as string, formats, false) as string;
     };
 
     t.has = function has(key: string): boolean {
@@ -283,7 +264,10 @@ export function createI18n<
       if (isMissing) {
         return [value];
       }
-      return renderRich<R>(value, params, lang as string, formats);
+      return render<R>(value, params, lang as string, formats, true) as (
+        | string
+        | R
+      )[];
     };
 
     t.markup = function markup(

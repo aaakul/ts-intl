@@ -15,7 +15,7 @@ function validateSegment(
       value !== null &&
       typeof value === "object" &&
       !Array.isArray(value) &&
-      !(typeof value.other === "string")
+      typeof value.other !== "string"
     ) {
       validateSegment(value, invalidKeys, fullPath);
     }
@@ -30,9 +30,11 @@ export function validateMessages(
   messages: Record<string, any>,
   onError?: (error: I18nError) => void,
 ): void {
-  const isProd =
-    typeof process !== "undefined" && process.env?.NODE_ENV === "production";
-  if (isProd) {
+  if (
+    typeof process !== "undefined" &&
+    process.env &&
+    process.env.NODE_ENV === "production"
+  ) {
     return;
   }
 

@@ -2,44 +2,27 @@ import { I18nError, I18nErrorCode } from "../core/errors";
 import type { Formats } from "../types/config";
 import { createIntlFormatters, type IntlFormatters } from "./cache";
 
-const SECOND = 1;
-const MINUTE = SECOND * 60;
-const HOUR = MINUTE * 60;
-const DAY = HOUR * 24;
-const WEEK = DAY * 7;
-const MONTH = DAY * (365 / 12);
-const QUARTER = MONTH * 3;
-const YEAR = DAY * 365;
-
-const UNIT_SECONDS: Record<Intl.RelativeTimeFormatUnit, number> = {
-  second: SECOND,
-  seconds: SECOND,
-  minute: MINUTE,
-  minutes: MINUTE,
-  hour: HOUR,
-  hours: HOUR,
-  day: DAY,
-  days: DAY,
-  week: WEEK,
-  weeks: WEEK,
-  month: MONTH,
-  months: MONTH,
-  quarter: QUARTER,
-  quarters: QUARTER,
-  year: YEAR,
-  years: YEAR,
+const UNIT_SECONDS: Record<string, number> = {
+  second: 1,
+  minute: 60,
+  hour: 3600,
+  day: 86400,
+  week: 604800,
+  month: 2628000,
+  quarter: 7884000,
+  year: 31536000,
 };
 
 export function resolveRelativeTimeUnit(
   seconds: number,
 ): Intl.RelativeTimeFormatUnit {
   const abs = Math.abs(seconds);
-  if (abs < MINUTE) return "second";
-  if (abs < HOUR) return "minute";
-  if (abs < DAY) return "hour";
-  if (abs < WEEK) return "day";
-  if (abs < MONTH) return "week";
-  if (abs < YEAR) return "month";
+  if (abs < 60) return "second";
+  if (abs < 3600) return "minute";
+  if (abs < 86400) return "hour";
+  if (abs < 604800) return "day";
+  if (abs < 2628000) return "week";
+  if (abs < 31536000) return "month";
   return "year";
 }
 
@@ -47,7 +30,8 @@ function calculateRelativeTimeValue(
   seconds: number,
   unit: Intl.RelativeTimeFormatUnit,
 ): number {
-  return Math.round(seconds / UNIT_SECONDS[unit]);
+  const base = unit.endsWith("s") ? unit.slice(0, -1) : unit;
+  return Math.round(seconds / (UNIT_SECONDS[base] || 1));
 }
 
 export interface RelativeTimeOptions {
@@ -125,15 +109,13 @@ export function createFormatter(options: FormatterOptions): Formatter {
     message: string,
     codeOrOriginalError?: I18nErrorCode | unknown,
   ): void {
-    const code =
+    const isCode =
       typeof codeOrOriginalError === "string" &&
-      Object.values(I18nErrorCode).includes(
-        codeOrOriginalError as I18nErrorCode,
-      )
-        ? (codeOrOriginalError as I18nErrorCode)
-        : I18nErrorCode.FORMATTING_ERROR;
-    const originalError =
-      typeof codeOrOriginalError === "string" ? undefined : codeOrOriginalError;
+      codeOrOriginalError in I18nErrorCode;
+    const code = isCode
+      ? (codeOrOriginalError as I18nErrorCode)
+      : I18nErrorCode.FORMATTING_ERROR;
+    const originalError = isCode ? undefined : codeOrOriginalError;
     const error = new I18nError(code, message, {
       lang: locale,
       originalError,

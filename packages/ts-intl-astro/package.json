@@ -1,7 +1,7 @@
 {
   "name": "ts-intl-astro",
-  "version": "1.0.2",
-  "description": "A lightweight, type-safe Astro integration for internationalization (i18n). Delivers a developer experience inspired by `next-intl`. ",
+  "version": "1.0.3",
+  "description": "Lightweight, type-safe Astro internationalization (i18n) integration. Delivers a developer experience inspired by `next-intl`. ",
   "type": "module",
   "publishConfig": {
     "access": "public"

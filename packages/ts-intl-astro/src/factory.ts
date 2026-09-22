@@ -35,17 +35,29 @@ export function createAstroI18n<
 
   const core = createI18n(config);
 
-  setGlobalFallbackLanguage(config.defaultLanguage);
+  const defaultLanguage = config.defaultLanguage;
+  setGlobalFallbackLanguage(defaultLanguage);
 
   const resolverOptions = {
     supportedLanguages: core.languages,
-    defaultLanguage: core.defaultLanguage,
+    defaultLanguage,
     paramNames: config.paramNames,
   };
 
   setGlobalMiddlewareOptions(resolverOptions);
 
   const i18nMiddleware = createI18nMiddleware(resolverOptions);
+
+  const translationsCache = new Map<string, any>();
+  const getTranslations = (lang: string, namespace?: string) => {
+    const cacheKey = namespace ? `${lang}:${namespace}` : lang;
+    let t = translationsCache.get(cacheKey);
+    if (!t) {
+      t = (core.getTranslations as any)(lang, namespace);
+      translationsCache.set(cacheKey, t);
+    }
+    return t;
+  };
 
   function useTranslations<N extends NamespaceKeys<TBase>>(
     namespace: N,
@@ -55,40 +67,33 @@ export function createAstroI18n<
     options?: UseTranslationsOptions<SupportedLanguage>,
   ): FlatTranslator<TBase>;
   function useTranslations(arg1?: any, arg2?: any): any {
-    let namespace: string | undefined;
-    let options: UseTranslationsOptions<SupportedLanguage> | undefined;
-
-    if (typeof arg1 === "string") {
-      namespace = arg1;
-      options = arg2;
-    } else if (typeof arg1 === "object" && arg1 !== null) {
-      options = arg1;
-    }
-
-    const activeLocale =
-      options?.locale || getActiveLocale(config.defaultLanguage);
-    return (core.getTranslations as any)(activeLocale, namespace);
+    const isNs = typeof arg1 === "string";
+    const namespace = isNs ? arg1 : undefined;
+    const options: UseTranslationsOptions<SupportedLanguage> | undefined = isNs
+      ? arg2
+      : arg1;
+    const activeLocale = options?.locale || getActiveLocale(defaultLanguage);
+    return getTranslations(activeLocale, namespace);
   }
 
   function useLocale(): SupportedLanguage {
-    return getActiveLocale(config.defaultLanguage) as SupportedLanguage;
+    return getActiveLocale(defaultLanguage) as SupportedLanguage;
   }
 
   function useFormatter(options?: UseTranslationsOptions<SupportedLanguage>) {
-    const activeLocale =
-      options?.locale || getActiveLocale(config.defaultLanguage);
+    const activeLocale = options?.locale || getActiveLocale(defaultLanguage);
     return core.getFormatter(activeLocale);
   }
 
   return {
     languages: core.languages,
-    defaultLanguage: core.defaultLanguage,
+    defaultLanguage,
     isSupportedLanguage: core.isSupportedLanguage,
     useTranslations: useTranslations as any,
     useLocale,
     useFormatter,
     i18nMiddleware,
-    getTranslations: core.getTranslations as any,
+    getTranslations: getTranslations as any,
     getFormatter: core.getFormatter,
   };
 }

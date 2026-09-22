@@ -16,8 +16,7 @@ export function tsIntlAstro(options: TsIntlIntegrationOptions = {}): {
   name: string;
   hooks: Record<string, any>;
 } {
-  const middlewareEntrypoint =
-    options.middlewareEntrypoint || "ts-intl-astro/middleware";
+  const { middlewareEntrypoint = "ts-intl-astro/middleware" } = options;
 
   return {
     name: "ts-intl-astro",

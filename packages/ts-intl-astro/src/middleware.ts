@@ -28,37 +28,35 @@ export function getGlobalMiddlewareOptions(): ResolveLocaleOptions | undefined {
   return g[OPTIONS_KEY];
 }
 
+function attachLocaleAndRun(
+  context: AstroCompatibleContext,
+  locale: string,
+  next: AstroMiddlewareNext,
+): Promise<Response> {
+  const locals = (context.locals ||= {});
+  locals.locale = locals.lang = locale;
+  return runWithLocale(locale, next);
+}
+
 /**
  * Factory that creates an Astro-compatible middleware function.
  */
 export function createI18nMiddleware(
   options: ResolveLocaleOptions,
 ): AstroMiddlewareFn {
-  return async (
-    context: AstroCompatibleContext,
-    next: AstroMiddlewareNext,
-  ): Promise<Response> => {
-    const locale = resolveRequestLocale(context, options);
-
-    if (!context.locals) {
-      context.locals = {};
-    }
-    context.locals.locale = locale;
-    context.locals.lang = locale;
-
-    return runWithLocale(locale, () => next());
-  };
+  return (context: AstroCompatibleContext, next: AstroMiddlewareNext) =>
+    attachLocaleAndRun(context, resolveRequestLocale(context, options), next);
 }
 
 /**
  * Standalone Astro middleware handler.
  * Uses options registered via setGlobalMiddlewareOptions or defaults.
  */
-export const onRequest: AstroMiddlewareFn = async (
+export const onRequest: AstroMiddlewareFn = (
   context: AstroCompatibleContext,
   next: AstroMiddlewareNext,
-): Promise<Response> => {
-  const options = getGlobalMiddlewareOptions();
+) => {
+  const options = g[OPTIONS_KEY];
   let locale: string;
 
   if (options) {
@@ -66,16 +64,11 @@ export const onRequest: AstroMiddlewareFn = async (
   } else {
     const candidate =
       context.currentLocale || context.params?.lang || context.params?.locale;
-    const fallback = getGlobalFallbackLanguage();
     locale =
-      candidate && SAFE_LOCALE_PATTERN.test(candidate) ? candidate : fallback;
+      candidate && SAFE_LOCALE_PATTERN.test(candidate)
+        ? candidate
+        : getGlobalFallbackLanguage();
   }
 
-  if (!context.locals) {
-    context.locals = {};
-  }
-  context.locals.locale = locale;
-  context.locals.lang = locale;
-
-  return runWithLocale(locale, () => next());
+  return attachLocaleAndRun(context, locale, next);
 };

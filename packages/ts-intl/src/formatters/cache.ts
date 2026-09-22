@@ -9,25 +9,12 @@ export interface IntlCache {
   displayName: Map<string, Intl.DisplayNames>;
 }
 
-/**
- * Bounded LRU cache extending native Map.
- * Evicts the oldest accessed entry when exceeding maxSize to limit formatter instance memory usage.
- */
 export class LruMap<K, V> extends Map<K, V> {
   readonly maxSize: number;
 
   constructor(maxSize = 200) {
     super();
     this.maxSize = maxSize;
-  }
-
-  override get(key: K): V | undefined {
-    const val = super.get(key);
-    if (val !== undefined) {
-      super.delete(key);
-      super.set(key, val);
-    }
-    return val;
   }
 
   override set(key: K, value: V): this {
@@ -39,8 +26,7 @@ export class LruMap<K, V> extends Map<K, V> {
         super.delete(oldestKey);
       }
     }
-    super.set(key, value);
-    return this;
+    return super.set(key, value);
   }
 }
 
@@ -94,65 +80,32 @@ export interface IntlFormatters {
 export function createIntlFormatters(
   cache: IntlCache = createIntlCache(),
 ): IntlFormatters {
+  const getOrCreate = <T>(
+    map: Map<string, T>,
+    ctor: new (loc: string, opt?: any) => T,
+    locale: string,
+    options?: any,
+  ): T => {
+    const key = serializeKey(locale, options);
+    let inst = map.get(key);
+    if (!inst) {
+      inst = new ctor(locale, options);
+      map.set(key, inst);
+    }
+    return inst;
+  };
+
   return {
-    getDateTimeFormat(locale, options) {
-      const key = serializeKey(locale, options);
-      let formatter = cache.dateTime.get(key);
-      if (!formatter) {
-        formatter = new Intl.DateTimeFormat(locale, options);
-        cache.dateTime.set(key, formatter);
-      }
-      return formatter;
-    },
-
-    getNumberFormat(locale, options) {
-      const key = serializeKey(locale, options);
-      let formatter = cache.number.get(key);
-      if (!formatter) {
-        formatter = new Intl.NumberFormat(locale, options);
-        cache.number.set(key, formatter);
-      }
-      return formatter;
-    },
-
-    getPluralRules(locale, options) {
-      const key = serializeKey(locale, options);
-      let rules = cache.pluralRules.get(key);
-      if (!rules) {
-        rules = new Intl.PluralRules(locale, options);
-        cache.pluralRules.set(key, rules);
-      }
-      return rules;
-    },
-
-    getRelativeTimeFormat(locale, options) {
-      const key = serializeKey(locale, options);
-      let formatter = cache.relativeTime.get(key);
-      if (!formatter) {
-        formatter = new Intl.RelativeTimeFormat(locale, options);
-        cache.relativeTime.set(key, formatter);
-      }
-      return formatter;
-    },
-
-    getListFormat(locale, options) {
-      const key = serializeKey(locale, options);
-      let formatter = cache.list.get(key);
-      if (!formatter) {
-        formatter = new Intl.ListFormat(locale, options);
-        cache.list.set(key, formatter);
-      }
-      return formatter;
-    },
-
-    getDisplayNames(locale, options) {
-      const key = serializeKey(locale, options);
-      let displayNames = cache.displayName.get(key);
-      if (!displayNames) {
-        displayNames = new Intl.DisplayNames(locale, options);
-        cache.displayName.set(key, displayNames);
-      }
-      return displayNames;
-    },
+    getDateTimeFormat: (l, o) =>
+      getOrCreate(cache.dateTime, Intl.DateTimeFormat, l, o),
+    getNumberFormat: (l, o) =>
+      getOrCreate(cache.number, Intl.NumberFormat, l, o),
+    getPluralRules: (l, o) =>
+      getOrCreate(cache.pluralRules, Intl.PluralRules, l, o),
+    getRelativeTimeFormat: (l, o) =>
+      getOrCreate(cache.relativeTime, Intl.RelativeTimeFormat, l, o),
+    getListFormat: (l, o) => getOrCreate(cache.list, Intl.ListFormat, l, o),
+    getDisplayNames: (l, o) =>
+      getOrCreate(cache.displayName, Intl.DisplayNames, l, o),
   };
 }

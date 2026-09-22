@@ -36,6 +36,32 @@ function unmaskValue<T>(val: T): T {
   return val;
 }
 
+function resolveFrame<R>(
+  frame: StackFrame<R>,
+  params?: Record<string, any>,
+  isClosing = false,
+): string | R | (string | R)[] {
+  const frameRenderer = getOwnRenderer(params, frame.tag);
+  const ch = frame.children;
+  const innerChildren =
+    ch.length === 0
+      ? ""
+      : ch.every((c) => typeof c === "string")
+        ? (ch as string[]).join("")
+        : ch.length === 1
+          ? ch[0]!
+          : ch;
+
+  if (frameRenderer) {
+    return frameRenderer(unmaskValue(innerChildren));
+  }
+  return [
+    frame.rawOpen,
+    ...ch.map(unmaskValue),
+    ...(isClosing ? [`</${frame.tag}>`] : []),
+  ].join("");
+}
+
 /**
  * Parses rich-text tags hierarchically, supporting arbitrary nesting, self-closing tags, and unclosed tag recovery.
  */
@@ -84,35 +110,15 @@ export function renderRichHierarchy<R>(
       if (targetIdx !== -1) {
         while (stack.length > targetIdx) {
           const frame = stack.pop()!;
-          const frameRenderer = getOwnRenderer(params, frame.tag);
-          const innerChildren =
-            frame.children.length === 0
-              ? ""
-              : frame.children.every((c) => typeof c === "string")
-                ? (frame.children as string[]).join("")
-                : frame.children.length === 1
-                  ? frame.children[0]
-                  : frame.children;
-
-          const rendered = frameRenderer
-            ? frameRenderer(unmaskValue(innerChildren))
-            : [
-                frame.rawOpen,
-                ...frame.children.map(unmaskValue),
-                `</${frame.tag}>`,
-              ].join("");
-
-          currentFrame().children.push(rendered);
+          currentFrame().children.push(
+            resolveFrame(frame, params, true) as any,
+          );
         }
       } else {
         currentFrame().children.push(fullMatch);
       }
     } else if (isSelfClosing) {
-      if (renderer) {
-        currentFrame().children.push(renderer(""));
-      } else {
-        currentFrame().children.push(fullMatch);
-      }
+      currentFrame().children.push(renderer ? renderer("") : fullMatch);
     } else {
       stack.push({
         tag: tagName,
@@ -128,21 +134,7 @@ export function renderRichHierarchy<R>(
 
   while (stack.length > 1) {
     const frame = stack.pop()!;
-    const frameRenderer = getOwnRenderer(params, frame.tag);
-    const innerChildren =
-      frame.children.length === 0
-        ? ""
-        : frame.children.every((c) => typeof c === "string")
-          ? (frame.children as string[]).join("")
-          : frame.children.length === 1
-            ? frame.children[0]
-            : frame.children;
-
-    const rendered = frameRenderer
-      ? frameRenderer(unmaskValue(innerChildren))
-      : [frame.rawOpen, ...frame.children.map(unmaskValue)].join("");
-
-    currentFrame().children.push(rendered);
+    currentFrame().children.push(resolveFrame(frame, params, false) as any);
   }
 
   return root.children.map(unmaskValue);

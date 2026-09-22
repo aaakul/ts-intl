@@ -11,9 +11,9 @@ type GlobalThisWithStorage = typeof globalThis & {
 
 const g = globalThis as GlobalThisWithStorage;
 
-export const i18nStorage: AsyncLocalStorage<I18nContextStore> =
-  g[STORAGE_KEY] ||
-  (g[STORAGE_KEY] = new AsyncLocalStorage<I18nContextStore>());
+export const i18nStorage: AsyncLocalStorage<I18nContextStore> = (g[
+  STORAGE_KEY
+] ||= new AsyncLocalStorage<I18nContextStore>());
 
 /**
  * Sets a global fallback language when no active context is found.
@@ -31,11 +31,9 @@ export function getGlobalFallbackLanguage(): string {
  * Falls back to globalFallbackLanguage if no context has been established.
  */
 export function getActiveLocale(fallback?: string): string {
-  const store = i18nStorage.getStore();
-  if (store?.locale) {
-    return store.locale;
-  }
-  return fallback || getGlobalFallbackLanguage();
+  return (
+    i18nStorage.getStore()?.locale || fallback || g[FALLBACK_LANG_KEY] || "en"
+  );
 }
 
 /**

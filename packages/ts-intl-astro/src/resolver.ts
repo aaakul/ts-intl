@@ -6,6 +6,11 @@ export interface ResolveLocaleOptions {
   paramNames?: string[];
 }
 
+const DEFAULT_PARAM_NAMES: readonly string[] = Object.freeze([
+  "lang",
+  "locale",
+]);
+
 /**
  * Resolves the request locale from context.currentLocale, route params, or URL path segments.
  */
@@ -13,11 +18,7 @@ export function resolveRequestLocale(
   context: AstroCompatibleContext,
   options: ResolveLocaleOptions,
 ): string {
-  const {
-    supportedLanguages,
-    defaultLanguage,
-    paramNames = ["lang", "locale"],
-  } = options;
+  const { supportedLanguages, defaultLanguage } = options;
 
   if (
     context.currentLocale &&
@@ -27,20 +28,34 @@ export function resolveRequestLocale(
   }
 
   if (context.params) {
-    for (const name of paramNames) {
-      const paramVal = context.params[name];
-      if (paramVal && supportedLanguages.includes(paramVal)) {
-        return paramVal;
+    const paramNames = options.paramNames || DEFAULT_PARAM_NAMES;
+    for (let i = 0; i < paramNames.length; i++) {
+      const name = paramNames[i];
+      if (name) {
+        const paramVal = context.params[name];
+        if (paramVal && supportedLanguages.includes(paramVal)) {
+          return paramVal;
+        }
       }
     }
   }
 
-  if (context.url && context.url.pathname) {
-    const segments = context.url.pathname.split("/").filter(Boolean);
-    for (const segment of segments) {
+  const pathname = context.url?.pathname;
+  if (pathname) {
+    const len = pathname.length;
+    let start = 0;
+    while (start < len) {
+      while (start < len && pathname.charCodeAt(start) === 47) {
+        start++;
+      }
+      if (start >= len) break;
+      let end = pathname.indexOf("/", start);
+      if (end === -1) end = len;
+      const segment = pathname.slice(start, end);
       if (supportedLanguages.includes(segment)) {
         return segment;
       }
+      start = end + 1;
     }
   }
 

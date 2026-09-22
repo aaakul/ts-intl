@@ -1291,19 +1291,19 @@ describe("Security and Performance Enhancements", () => {
     expect(resPlain).toBe("Hello <script>alert(1)</script>!");
   });
 
-  it("LruMap evicts least-recently-used items when exceeding maxSize", () => {
+  it("LruMap evicts oldest items when exceeding maxSize", () => {
     const lru = new LruMap<string, number>(3);
     lru.set("a", 1);
     lru.set("b", 2);
     lru.set("c", 3);
 
     expect(lru.size).toBe(3);
-    expect(lru.get("a")).toBe(1); // 'a' is now most recently used: order b, c, a
-
-    lru.set("d", 4); // should evict 'b'
-    expect(lru.size).toBe(3);
-    expect(lru.has("b")).toBe(false);
     expect(lru.get("a")).toBe(1);
+
+    lru.set("d", 4);
+    expect(lru.size).toBe(3);
+    expect(lru.has("a")).toBe(false);
+    expect(lru.get("b")).toBe(2);
     expect(lru.get("c")).toBe(3);
     expect(lru.get("d")).toBe(4);
   });

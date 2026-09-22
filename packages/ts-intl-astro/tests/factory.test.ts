@@ -96,6 +96,18 @@ describe("createAstroI18n & useTranslations", () => {
     expect(t("badge")).toBe("New Release");
   });
 
+  it("caches translator instances for identical locale and namespace", () => {
+    runWithLocale("zh-Hans", () => {
+      const t1 = useTranslations("hero");
+      const t2 = useTranslations("hero");
+      expect(t1).toBe(t2);
+
+      const tRoot1 = useTranslations();
+      const tRoot2 = useTranslations();
+      expect(tRoot1).toBe(tRoot2);
+    });
+  });
+
   it("middleware sets context.locals and runs wrapped inside AsyncLocalStorage", async () => {
     let capturedInsideLocale = "";
 
@@ -154,6 +166,26 @@ describe("resolveRequestLocale (Astro 3/4/5 cross-version compatibility)", () =>
       options,
     );
     expect(res).toBe("ja-JP");
+  });
+
+  it("handles complex, deeply nested paths and multiple consecutive slashes", () => {
+    expect(
+      resolveRequestLocale(
+        { url: new URL("https://example.com///zh-Hans///deeply/nested/slug") },
+        options,
+      ),
+    ).toBe("zh-Hans");
+
+    expect(
+      resolveRequestLocale(
+        { url: new URL("https://example.com/ja-JP/") },
+        options,
+      ),
+    ).toBe("ja-JP");
+
+    expect(
+      resolveRequestLocale({ url: new URL("https://example.com/") }, options),
+    ).toBe("en-US");
   });
 
   it("falls back to defaultLanguage if no matching language is found", () => {

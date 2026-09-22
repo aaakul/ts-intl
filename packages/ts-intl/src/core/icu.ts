@@ -113,47 +113,25 @@ export function resolveIcu(
             const rawVal = params?.[argName];
             const val =
               rawVal !== undefined && rawVal !== null ? String(rawVal) : "";
-            let branch = cases.get(val);
-            if (branch === undefined) {
-              branch = cases.get("other") ?? "";
-            }
+            const branch = cases.get(val) ?? cases.get("other") ?? "";
             result += resolveIcu(branch, params, lang, context, _depth + 1);
-          } else if (formatType === "selectordinal") {
+          } else if (
+            formatType === "plural" ||
+            formatType === "selectordinal"
+          ) {
             const cases = parseIcuCases(casesOrStyle);
             const rawVal = params?.[argName];
             const numVal =
               typeof rawVal === "number" ? rawVal : Number(rawVal) || 0;
-            const exactKey = `=${numVal}`;
-            let branch = cases.get(exactKey);
-            if (branch === undefined) {
-              const category = context.getOrdinalCategory(lang, numVal);
-              branch = cases.get(category);
-              if (branch === undefined) {
-                branch = cases.get("other") ?? "";
-              }
-            }
-            const branchWithNum = branch.replace(/#/g, String(numVal));
-            result += resolveIcu(
-              branchWithNum,
-              params,
-              lang,
-              context,
-              _depth + 1,
-            );
-          } else if (formatType === "plural") {
-            const cases = parseIcuCases(casesOrStyle);
-            const rawVal = params?.[argName];
-            const numVal =
-              typeof rawVal === "number" ? rawVal : Number(rawVal) || 0;
-            const exactKey = `=${numVal}`;
-            let branch = cases.get(exactKey);
-            if (branch === undefined) {
-              const category = context.getPluralCategory(lang, numVal);
-              branch = cases.get(category);
-              if (branch === undefined) {
-                branch = cases.get("other") ?? "";
-              }
-            }
+            const category =
+              formatType === "plural"
+                ? context.getPluralCategory(lang, numVal)
+                : context.getOrdinalCategory(lang, numVal);
+            const branch =
+              cases.get(`=${numVal}`) ??
+              cases.get(category) ??
+              cases.get("other") ??
+              "";
             const branchWithNum = branch.replace(/#/g, String(numVal));
             result += resolveIcu(
               branchWithNum,

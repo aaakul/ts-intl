@@ -6,7 +6,7 @@ import tsIntl from "ts-intl-astro";
 
 export default defineConfig({
   output: "static",
-  site: process.env.SITE_URL || "https://ts-intl.pages.dev",
+  site: process.env.SITE_URL || "http://localhost:3000",
   trailingSlash: "never",
   integrations: [
     tsIntl(),
@@ -36,18 +36,5 @@ export default defineConfig({
         dark: "github-dark",
       },
     },
-  },
-  vite: {
-    ...(process.env.NODE_ENV === "development" &&
-    (process.env.TUNNEL === "true" || process.env.CLOUDFLARE_TUNNEL)
-      ? {
-          server: {
-            allowedHosts: [".trycloudflare.com"],
-            hmr: {
-              clientPort: 443,
-            },
-          },
-        }
-      : {}),
   },
 });
