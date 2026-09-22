@@ -1,0 +1,214 @@
+---
+import Icon from "./Icon.astro";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+
+const PACKAGE_MANAGERS = [
+  { name: "pnpm", prefix: "pnpm add" },
+  { name: "npm", prefix: "npm install" },
+  { name: "yarn", prefix: "yarn add" },
+  { name: "bun", prefix: "bun add" },
+] as const;
+
+const PACKAGE_NAME = "@aaakul/ts-intl";
+---
+
+<div
+  class:list={[
+    "install-tabs-root inline-flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50/90 dark:bg-neutral-900/70 backdrop-blur-sm shadow-xs text-xs font-mono max-w-full",
+    className,
+  ]}
+  data-package={PACKAGE_NAME}
+>
+  <!-- Package manager selector tabs -->
+  <div
+    class="flex items-center justify-between sm:justify-start gap-1 p-0.5 rounded-md bg-neutral-200/50 dark:bg-neutral-800/50"
+    role="tablist"
+    aria-label="Package Manager"
+  >
+    {
+      PACKAGE_MANAGERS.map((pm, index) => (
+        <button
+          type="button"
+          role="tab"
+          data-pm={pm.name}
+          data-prefix={pm.prefix}
+          aria-selected={index === 0 ? "true" : "false"}
+          class="install-tab-btn px-2.5 py-1 rounded text-xs font-mono font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 transition-all cursor-pointer aria-selected:bg-white dark:aria-selected:bg-neutral-800 aria-selected:text-neutral-950 dark:aria-selected:text-white aria-selected:font-semibold aria-selected:shadow-xs"
+        >
+          {pm.name}
+        </button>
+      ))
+    }
+  </div>
+
+  <!-- Divider for sm+ screens -->
+  <div
+    class="hidden sm:block h-4 w-px bg-neutral-200 dark:bg-neutral-800 mx-0.5"
+  >
+  </div>
+
+  <!-- Command display and copy action -->
+  <div class="flex items-center justify-between gap-3 px-2 py-0.5 sm:py-0">
+    <div
+      class="install-code-area flex items-center gap-2 cursor-pointer px-1.5 py-0.5 rounded hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors group select-all min-w-[200px] sm:min-w-[220px]"
+      title="Click to copy command"
+      role="button"
+      tabindex="0"
+      aria-label="Copy install command to clipboard"
+    >
+      <span class="text-neutral-400 dark:text-neutral-500 select-none text-xs"
+        >$</span
+      >
+      <div
+        class="flex items-center gap-1.5 text-xs sm:text-[13px] tracking-tight whitespace-nowrap"
+      >
+        <span
+          class="install-cmd-prefix text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors"
+        >
+          {PACKAGE_MANAGERS[0].prefix}
+        </span>
+        <span class="text-neutral-950 dark:text-white font-medium">
+          {PACKAGE_NAME}
+        </span>
+      </div>
+    </div>
+
+    <!-- Copy Button -->
+    <button
+      type="button"
+      class="install-copy-btn relative inline-flex items-center justify-center p-1.5 rounded-md text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer"
+      aria-label="Copy install command"
+      title="Copy install command"
+    >
+      <Icon name="copy" class="copy-icon w-3.5 h-3.5" />
+      <Icon
+        name="check"
+        class="check-icon w-3.5 h-3.5 hidden text-emerald-500 dark:text-emerald-400"
+      />
+      <span
+        class="copy-tooltip pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] font-sans font-medium text-white bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 shadow-sm opacity-0 transition-opacity whitespace-nowrap"
+      >
+        Copied!
+      </span>
+    </button>
+  </div>
+</div>
+
+<script>
+  function setupInstallTabs() {
+    const containers =
+      document.querySelectorAll<HTMLElement>(".install-tabs-root");
+
+    containers.forEach((container) => {
+      if (container.dataset.initialized === "true") return;
+      container.dataset.initialized = "true";
+
+      const packageName = container.dataset.package || "@aaakul/ts-intl";
+      const tabButtons =
+        container.querySelectorAll<HTMLButtonElement>(".install-tab-btn");
+      const prefixEl = container.querySelector<HTMLElement>(
+        ".install-cmd-prefix",
+      );
+      const copyButton =
+        container.querySelector<HTMLButtonElement>(".install-copy-btn");
+      const codeArea =
+        container.querySelector<HTMLElement>(".install-code-area");
+      const copyIcon = container.querySelector<HTMLElement>(".copy-icon");
+      const checkIcon = container.querySelector<HTMLElement>(".check-icon");
+      const copyTooltip = container.querySelector<HTMLElement>(".copy-tooltip");
+
+      const prefixes: Record<string, string> = {};
+      tabButtons.forEach((btn) => {
+        const pm = btn.dataset.pm;
+        const prefix = btn.dataset.prefix;
+        if (pm && prefix) prefixes[pm] = prefix;
+      });
+
+      let currentPm = "pnpm";
+
+      function switchPm(pm: string) {
+        if (!prefixes[pm]) return;
+        currentPm = pm;
+
+        tabButtons.forEach((btn) => {
+          btn.setAttribute(
+            "aria-selected",
+            btn.dataset.pm === pm ? "true" : "false",
+          );
+        });
+
+        if (prefixEl) prefixEl.textContent = prefixes[pm];
+      }
+
+      switchPm(currentPm);
+
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const pm = btn.dataset.pm;
+          if (pm) switchPm(pm);
+        });
+      });
+
+      let copyTimeout: number | undefined;
+
+      async function copyCommand() {
+        const prefix = prefixes[currentPm] || "pnpm add";
+        const command = `${prefix} ${packageName}`;
+
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(command);
+          } else {
+            const ta = document.createElement("textarea");
+            ta.value = command;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+          }
+
+          copyIcon?.classList.add("hidden");
+          checkIcon?.classList.remove("hidden");
+          copyTooltip?.classList.remove("opacity-0");
+
+          window.clearTimeout(copyTimeout);
+          copyTimeout = window.setTimeout(() => {
+            copyIcon?.classList.remove("hidden");
+            checkIcon?.classList.add("hidden");
+            copyTooltip?.classList.add("opacity-0");
+          }, 2000);
+        } catch (err) {
+          console.error("Failed to copy command: ", err);
+        }
+      }
+
+      copyButton?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        copyCommand();
+      });
+
+      codeArea?.addEventListener("click", () => copyCommand());
+      codeArea?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          copyCommand();
+        }
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupInstallTabs);
+  } else {
+    setupInstallTabs();
+  }
+  document.addEventListener("astro:after-swap", setupInstallTabs);
+</script>

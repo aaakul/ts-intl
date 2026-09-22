@@ -39,6 +39,10 @@ const canonicalUrl = new URL(`/${lang}${canonicalPath}`, siteBase).href;
     <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <meta name="generator" content={Astro.generator} />
+    <meta
+      name="google-site-verification"
+      content="85GQ-BupfFiBw5iO3oZfV5OVVdrKS-CiGNeQmHnR2EU"
+    />
 
     <!-- SEO Meta Tags -->
     <title>{fullTitle}</title>
@@ -156,15 +160,16 @@ const canonicalUrl = new URL(`/${lang}${canonicalPath}`, siteBase).href;
 </html>
 
 <style is:global>
+  pre,
+  code {
+    font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+
   pre {
     position: relative;
     border: 1px solid #e5e5e5;
     border-radius: 0.5rem;
     padding: 1rem;
-    font-family:
-      "JetBrains Mono", Menlo, Monaco, Consolas, "Liberation Mono",
-      "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Noto Sans SC",
-      "WenQuanYi Micro Hei", sans-serif;
     font-size: 0.8125rem;
     line-height: 1.6;
     overflow-x: auto;
@@ -190,10 +195,7 @@ const canonicalUrl = new URL(`/${lang}${canonicalPath}`, siteBase).href;
     color: #737373;
     cursor: pointer;
     opacity: 0;
-    transition:
-      opacity 0.15s ease,
-      background-color 0.15s ease,
-      color 0.15s ease;
+    transition: 0.15s ease;
     z-index: 10;
   }
 
@@ -226,20 +228,13 @@ const canonicalUrl = new URL(`/${lang}${canonicalPath}`, siteBase).href;
   }
 
   /* Shiki dual-theme dark mode support */
-  html.dark .astro-code-themes,
-  html.dark .astro-code-themes span {
+  .dark .astro-code-themes,
+  .dark .astro-code-themes span {
     color: var(--shiki-dark) !important;
     background-color: var(--shiki-dark-bg) !important;
     font-style: var(--shiki-dark-font-style) !important;
     font-weight: var(--shiki-dark-font-weight) !important;
     text-decoration: var(--shiki-dark-text-decoration) !important;
-  }
-
-  code {
-    font-family:
-      "JetBrains Mono", Menlo, Monaco, Consolas, "Liberation Mono",
-      "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Noto Sans SC",
-      "WenQuanYi Micro Hei", sans-serif;
   }
 
   :not(pre) > code {

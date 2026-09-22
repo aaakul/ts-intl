@@ -104,6 +104,15 @@ const nextChapter =
 
 <style is:global>
   /* Minimalist typography for documentation */
+  .doc-content {
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+
+  .doc-content :is(h2, h3, h4) {
+    scroll-margin-top: 5rem;
+  }
+
   .doc-content h1 {
     font-size: 1.875rem;
     line-height: 2.25rem;
@@ -117,52 +126,30 @@ const nextChapter =
     line-height: 1.75rem;
     font-weight: 600;
     letter-spacing: -0.02em;
-    margin-top: 2.5rem;
-    margin-bottom: 0.75rem;
+    margin: 2.5rem 0 0.75rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #e5e5e5;
-    scroll-margin-top: 5rem;
-  }
-
-  .dark .doc-content h2 {
-    border-color: #262626;
   }
 
   .doc-content h3 {
     font-size: 1.125rem;
     line-height: 1.5rem;
     font-weight: 600;
-    margin-top: 1.75rem;
-    margin-bottom: 0.5rem;
-    scroll-margin-top: 5rem;
+    margin: 1.75rem 0 0.5rem;
   }
 
-  .doc-content h4 {
-    scroll-margin-top: 5rem;
-  }
-
-  .doc-content p {
-    font-size: 0.875rem;
-    line-height: 1.7;
+  .doc-content :is(p, ul, ol) {
     margin-bottom: 1rem;
-  }
-
-  .doc-content ul,
-  .doc-content ol {
-    padding-left: 1.25rem;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-    line-height: 1.7;
   }
 
   .doc-content ul {
-    list-style-type: disc;
+    list-style: disc;
+    padding-left: 1.25rem;
   }
-
   .doc-content ol {
-    list-style-type: decimal;
+    list-style: decimal;
+    padding-left: 1.25rem;
   }
-
   .doc-content li {
     margin-bottom: 0.25rem;
   }
@@ -171,45 +158,28 @@ const nextChapter =
     padding-left: 1rem;
     border-left: 3px solid #d4d4d4;
     margin: 1.25rem 0;
-    font-size: 0.875rem;
     color: #737373;
-  }
-
-  .dark .doc-content blockquote {
-    border-color: #404040;
-    color: #a3a3a3;
   }
 
   .doc-content table {
     display: block;
-    max-width: 100%;
+    width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    width: 100%;
     margin: 1.5rem 0;
     border-collapse: collapse;
     font-size: 0.8125rem;
   }
 
-  .doc-content th,
-  .doc-content td {
+  .doc-content :is(th, td) {
     padding: 0.625rem 0.75rem;
     border: 1px solid #e5e5e5;
     text-align: left;
   }
 
-  .dark .doc-content th,
-  .dark .doc-content td {
-    border-color: #262626;
-  }
-
   .doc-content th {
     background-color: #f5f5f5;
     font-weight: 600;
-  }
-
-  .dark .doc-content th {
-    background-color: #171717;
   }
 
   .doc-content a {
@@ -223,18 +193,25 @@ const nextChapter =
     text-decoration-color: currentColor;
   }
 
-  /* Code blocks inside documentation */
   .doc-content pre {
-    margin-top: 1.25rem;
-    margin-bottom: 1.5rem;
+    margin: 1.25rem 0 1.5rem;
   }
-
   .doc-content pre + pre {
     margin-top: 1.5rem;
   }
-
   .doc-content li > pre {
-    margin-top: 0.75rem;
-    margin-bottom: 0.75rem;
+    margin: 0.75rem 0;
+  }
+
+  /* Dark mode */
+  .dark .doc-content :is(h2, th, td) {
+    border-color: #262626;
+  }
+  .dark .doc-content th {
+    background-color: #171717;
+  }
+  .dark .doc-content blockquote {
+    border-color: #404040;
+    color: #a3a3a3;
   }
 </style>
