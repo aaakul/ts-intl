@@ -49,4 +49,23 @@ export default {
     previewTitle: "实时预览",
     loading: "正在加载演练场...",
   },
+  benchmark: {
+    badge: "基准测试",
+    title: "网络传输体积基准测试",
+    desc: "模拟多语言 Web 应用在首屏预渲染与客户端水合（Hydration）时，浏览器实际下载的全部国际化资源网络传输体积。",
+    viewFullDocs: "查看完整基准测试报告",
+    scenario1Title: "10 语言 · 500 词条",
+    scenario2Title: "5 语言 · 100 词条",
+    totalTransferSize: "首屏网络传输体积 (KB)",
+    modeLocaleSplitting: "按需拆包",
+    modeBundled: "默认全量",
+    modeMiddleware: "中间件拆包",
+    modeHttp: "HTTP 动态加载",
+    takeaway1Title: "运行时体积与依赖考量",
+    takeaway1Desc:
+      "i18next 包含独立解析器与插件运行时，存在固定体积开销；ts-intl 无第三方依赖，核心运行时约 2 KB，在按需拆包模式下仅传输当前语言的字典分块。",
+    takeaway2Title: "编译型与运行时方案机制差异",
+    takeaway2Desc:
+      "Paraglide 编译每条消息为独立函数并支持 Tree-shaking 未使用词条；ts-intl 作为轻量运行时方案无需代码生成，通过标准动态 import 避免多语言字典合并打包。",
+  },
 } as const;

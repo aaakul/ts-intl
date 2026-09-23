@@ -145,3 +145,44 @@ export const { getTranslations } = createI18n({
   messages: { "en-US": enUS, "zh-Hans": zhHans },
 });
 ```
+
+### Dynamic Imports with `await import`
+
+In modern environments supporting Top-Level Await (such as Astro, Vite, Node 22+, Bun, etc.), dictionary files can be imported dynamically via `await import(...)`:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const enUS = (await import("./messages/en-US.ts")).default;
+const zhHans = (await import("./messages/zh-Hans.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "en-US",
+  messages: { "en-US": enUS, "zh-Hans": zhHans },
+});
+```
+
+#### Locale Code Splitting
+
+In applications with multiple locales, defining a loader map allows bundlers to split each language dictionary into its own chunk, loading only the active locale on demand:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "en-US": () => import("./messages/en-US.ts"),
+  "zh-Hans": () => import("./messages/zh-Hans.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
+
+> **Type Safety**: As long as dictionary files export `as const` or use JSON, dynamically imported dictionaries via `await import` retain full namespace autocomplete, literal key checking, and parameter type extraction (`{param: type}`).

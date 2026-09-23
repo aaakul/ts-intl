@@ -64,7 +64,7 @@ export default {
 
 ```ts
 // i18n/index.ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 
 // 1. 导入翻译文件
 import zhHans from "./messages/zh-Hans.ts";
@@ -129,7 +129,7 @@ export default {
 `createI18n` 原生支持直接加载 `.json` 文件作为词典，无需任何全局声明合并或构建插件，即可自动推导出所有层级的命名空间与键名类型，享受完整的自动补全与拼写错误拦截：
 
 ```ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 import zhHans from "./messages/zh-Hans.json";
 import enUS from "./messages/en-US.json";
 
@@ -154,6 +154,43 @@ t("title_typo");
 >
 > - **JSON 词典**：各层级命名空间与键名（Key）均能获得 100% 的强类型补全与报错拦截；但受限于 JSON 无法使用 `as const`，文本模板参数（如 `{name}`）将采用宽松类型推导。
 > - **TypeScript 词典（`as const`）**：在键名强类型的基础上，额外获得占位符参数（如 `{name: string}`、`{count: number}`）在编译期的严格静态校验。
+
+### 动态按需导入（`await import`）
+
+在支持 Top-Level Await 的现代环境（如 Astro、Vite、Node 22+、Bun 等）中，可以直接使用 `await import(...)` 动态加载词典：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const zhHans = (await import("./messages/zh-Hans.ts")).default;
+const enUS = (await import("./messages/en-US.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "zh-Hans",
+  messages: { "zh-Hans": zhHans, "en-US": enUS },
+});
+```
+
+结合函数式加载器（Loader Map），可实现语言包代码分割（Locale Splitting），按需仅加载当前激活的语言，且完整保留类型推导与键名补全：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "zh-Hans": () => import("./messages/zh-Hans.ts"),
+  "en-US": () => import("./messages/en-US.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
 
 ## 进阶翻译特性
 
@@ -492,7 +529,7 @@ t(
 通过 `createI18n` 解构出 `getFormatter`，可以方便地获取绑定了全局配置的格式化器：
 
 ```ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 
 export const { getTranslations, getFormatter } = createI18n({
   defaultLanguage: "zh-Hans",
@@ -538,7 +575,7 @@ formatterEn.number(1200000, "compact");
 适用于未调用 `createI18n` 或需要临时自定义格式化配置的独立模块：
 
 ```ts
-import { createFormatter } from "ts-intl";
+import { createFormatter } from "@aaakul/ts-intl";
 
 const formatter = createFormatter({
   locale: "zh-CN",
@@ -603,7 +640,7 @@ formatter.displayName("US", { type: "region" });
 支持统一的运行时异常监控与自定义文案回退策略：
 
 ```ts
-import { createI18n, I18nError, I18nErrorCode } from "ts-intl";
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
 
 export const i18n = createI18n({
   defaultLanguage: "zh-Hans",

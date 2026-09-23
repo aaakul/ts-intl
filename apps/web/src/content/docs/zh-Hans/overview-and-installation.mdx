@@ -145,3 +145,44 @@ export const { getTranslations } = createI18n({
   messages: { "zh-Hans": zhHans, "en-US": enUS },
 });
 ```
+
+### 动态按需导入（`await import`）
+
+在支持 Top-Level Await 的现代运行环境（如 Astro、Vite、Node 22+、Bun 等）中，可使用 `await import(...)` 动态导入词典文件：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const zhHans = (await import("./messages/zh-Hans.ts")).default;
+const enUS = (await import("./messages/en-US.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "zh-Hans",
+  messages: { "zh-Hans": zhHans, "en-US": enUS },
+});
+```
+
+#### 按语言按需拆分（Locale Splitting）
+
+在多语言项目中，为避免将全部语言的词典打包至单个客户端产物中，可结合函数加载器（Loader Map）实现按需代码分割与动态加载：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "zh-Hans": () => import("./messages/zh-Hans.ts"),
+  "en-US": () => import("./messages/en-US.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
+
+> **类型安全性**：只要词典文件使用 `export default { ... } as const;` 或 JSON 格式导出，通过 `await import` 动态导入依然完整保留所有层级的命名空间、键名补全以及参数类型校验（`{param: type}`）。

@@ -117,4 +117,21 @@ export const docChapters: DocChapter[] = [
         "ts-intl-astro によるコンポーネント階層の Props バケツリレー回避、コンテキストとミドルウェアに基づく Astro 向け国際化対応。",
     },
   },
+  {
+    slug: "benchmark",
+    order: 8,
+    title: {
+      "en-US": "Benchmark & Performance",
+      "zh-Hans": "基准测试与性能",
+      "ja-JP": "ベンチマークと性能",
+    },
+    description: {
+      "en-US":
+        "Measures the network transfer size of i18n assets during SSG pre-rendering and client-side hydration across libraries.",
+      "zh-Hans":
+        "模拟首屏预渲染与客户端水合（Hydration）场景，测量不同国际化库的真实网络传输开销。",
+      "ja-JP":
+        "事前レンダリングとクライアント側のハイドレーション環境における各 i18n ライブラリの実転送サイズ比較。",
+    },
+  },
 ];

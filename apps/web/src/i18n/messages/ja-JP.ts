@@ -49,4 +49,23 @@ export default {
     previewTitle: "プレビュー",
     loading: "プレイグラウンドを読み込み中...",
   },
+  benchmark: {
+    badge: "ベンチマーク",
+    title: "ネットワーク転送サイズベンチマーク",
+    desc: "事前レンダリングとクライアント側のハイドレーションを伴う多言語アプリにおいて、ブラウザが実際にダウンロードする全 i18n リソースの転送サイズを測定。",
+    viewFullDocs: "ベンチマーク詳細レポートを見る",
+    scenario1Title: "10 言語 · 500 辞書項目",
+    scenario2Title: "5 言語 · 100 辞書項目",
+    totalTransferSize: "ネットワーク転送サイズ (KB)",
+    modeLocaleSplitting: "ロケール分割",
+    modeBundled: "デフォルト一括",
+    modeMiddleware: "ミドルウェア分割",
+    modeHttp: "HTTP 動的取得",
+    takeaway1Title: "ランタイム依存関係とオーバーヘッド",
+    takeaway1Desc:
+      "i18next はパーサーやプラグイン機構による固有のランタイムサイズを伴います。ts-intl は外部依存ゼロ（コア約 2 KB）で、ロケール分割時はアクティブな言語の辞書のみを取得します。",
+    takeaway2Title: "コンパイラ方式と動的分割の特性",
+    takeaway2Desc:
+      "Paraglide は関数へコンパイルすることで未使用キーを Tree-shaking します。ts-intl はコード生成不要のランタイム設計で、動的インポートにより複数言語の一括肥大化を防ぎます。",
+  },
 } as const;

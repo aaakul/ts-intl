@@ -62,7 +62,7 @@ export default {
 
 ```ts
 // i18n/index.ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 
 // 1. 翻訳辞書ファイルのインポート
 import jaJP from "./messages/ja-JP.ts";
@@ -127,7 +127,7 @@ export default {
 `createI18n` は `.json` ファイルの直接インポートをネイティブでサポートしています。グローバルな型定義の結合（Declaration Merging）やビルドプラグインを必要とせず、すべての階層の名前空間とキーの型が自動推論され、完全な自動補完とタイポ検出を利用できます：
 
 ```ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 import jaJP from "./messages/ja-JP.json";
 import enUS from "./messages/en-US.json";
 
@@ -152,6 +152,43 @@ t("title_typo");
 >
 > - **JSON 辞書**：すべての階層の名前空間とキー（Key）に対して 100% 厳格な型補完とエラー検知を提供します。ただし、JSON の仕様上 `as const` を付与できないため、テキスト内の変数パラメータ（例: `{name}`）は緩やかな型推論となります。
 > - **TypeScript 辞書（`as const`）**：キー名の型補完に加えて、変数プレースホルダー（例: `{name: string}`, `{count: number}`）に対してもコンパイル時に完全な静的型チェックが行われます。
+
+### 動的インポート（`await import`）
+
+Top-Level Await をサポートするモダンな実行環境（Astro、Vite、Node 22+、Bun など）では、`await import(...)` を使用して辞書ファイルを動的に読み込むことができます：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const jaJP = (await import("./messages/ja-JP.ts")).default;
+const enUS = (await import("./messages/en-US.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "ja-JP",
+  messages: { "ja-JP": jaJP, "en-US": enUS },
+});
+```
+
+関数型ローダーマップ（Loader Map）と組み合わせることで、言語ごとのコード分割（Locale Splitting）を実現し、現在アクティブな言語のみをオンデマンドで読み込みつつ、静的型推論とキー補完を完全に維持できます：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "ja-JP": () => import("./messages/ja-JP.ts"),
+  "en-US": () => import("./messages/en-US.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
 
 ## 高度な翻訳機能
 
@@ -489,7 +526,7 @@ t(
 グローバル設定と連携したフォーマッターを簡単に取得できます：
 
 ```ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 
 export const { getTranslations, getFormatter } = createI18n({
   defaultLanguage: "ja-JP",
@@ -535,7 +572,7 @@ formatterEn.number(1200000, "compact");
 `createI18n` を呼び出していない場合や、特定モジュールで個別の設定が必要な場合に適しています：
 
 ```ts
-import { createFormatter } from "ts-intl";
+import { createFormatter } from "@aaakul/ts-intl";
 
 const formatter = createFormatter({
   locale: "ja-JP",
@@ -600,7 +637,7 @@ formatter.displayName("US", { type: "region" });
 統一されたランタイム監視とカスタムフォールバック処理をサポートしています：
 
 ```ts
-import { createI18n, I18nError, I18nErrorCode } from "ts-intl";
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
 
 export const i18n = createI18n({
   defaultLanguage: "ja-JP",

@@ -1,0 +1,276 @@
+---
+import { getTranslations, type SupportedLanguage } from "@/i18n";
+
+interface Props {
+  lang: SupportedLanguage;
+}
+
+const { lang } = Astro.props;
+const t = getTranslations(lang, "benchmark");
+
+interface BenchmarkItem {
+  name: string;
+  badge: string;
+  size: number;
+  highlight?: boolean;
+  reductionVsBaseline?: string;
+  colorClass: string;
+}
+
+// 10 Locales · 500 Messages
+const scaledData: BenchmarkItem[] = [
+  {
+    name: "paraglide",
+    badge: t("modeMiddleware"),
+    size: 36.3,
+    reductionVsBaseline: "-91%",
+    colorClass:
+      "bg-sky-500/70 dark:bg-sky-400/70 text-sky-950 dark:text-sky-950",
+  },
+  {
+    name: "ts-intl",
+    badge: t("modeLocaleSplitting"),
+    size: 57.8,
+    highlight: true,
+    reductionVsBaseline: "-86%",
+    colorClass:
+      "bg-emerald-500 dark:bg-emerald-400 text-emerald-950 dark:text-emerald-950",
+  },
+  {
+    name: "paraglide",
+    badge: t("modeBundled"),
+    size: 76.6,
+    reductionVsBaseline: "-82%",
+    colorClass:
+      "bg-sky-500/80 dark:bg-sky-400/80 text-sky-950 dark:text-sky-950",
+  },
+  {
+    name: "i18next",
+    badge: t("modeHttp"),
+    size: 188.7,
+    reductionVsBaseline: "-55%",
+    colorClass:
+      "bg-amber-500/80 dark:bg-amber-400/80 text-amber-950 dark:text-amber-950",
+  },
+  {
+    name: "ts-intl",
+    badge: t("modeBundled"),
+    size: 360.0,
+    reductionVsBaseline: "-14%",
+    colorClass:
+      "bg-emerald-600/40 dark:bg-emerald-500/40 text-emerald-950 dark:text-emerald-950",
+  },
+  {
+    name: "i18next",
+    badge: t("modeBundled"),
+    size: 420.4,
+    reductionVsBaseline: "Baseline",
+    colorClass:
+      "bg-neutral-400 dark:bg-neutral-600 text-neutral-900 dark:text-neutral-100",
+  },
+];
+
+// 5 Locales · 100 Messages
+const starterData: BenchmarkItem[] = [
+  {
+    name: "ts-intl",
+    badge: t("modeLocaleSplitting"),
+    size: 29.7,
+    highlight: true,
+    reductionVsBaseline: "-84%",
+    colorClass:
+      "bg-emerald-500 dark:bg-emerald-400 text-emerald-950 dark:text-emerald-950",
+  },
+  {
+    name: "paraglide",
+    badge: t("modeMiddleware"),
+    size: 36.1,
+    reductionVsBaseline: "-80%",
+    colorClass:
+      "bg-sky-500/70 dark:bg-sky-400/70 text-sky-950 dark:text-sky-950",
+  },
+  {
+    name: "paraglide",
+    badge: t("modeBundled"),
+    size: 47.1,
+    reductionVsBaseline: "-74%",
+    colorClass:
+      "bg-sky-500/80 dark:bg-sky-400/80 text-sky-950 dark:text-sky-950",
+  },
+  {
+    name: "ts-intl",
+    badge: t("modeBundled"),
+    size: 56.9,
+    reductionVsBaseline: "-69%",
+    colorClass:
+      "bg-emerald-600/40 dark:bg-emerald-500/40 text-emerald-950 dark:text-emerald-950",
+  },
+  {
+    name: "i18next",
+    badge: t("modeHttp"),
+    size: 167.5,
+    reductionVsBaseline: "-9%",
+    colorClass:
+      "bg-amber-500/80 dark:bg-amber-400/80 text-amber-950 dark:text-amber-950",
+  },
+  {
+    name: "i18next",
+    badge: t("modeBundled"),
+    size: 183.3,
+    reductionVsBaseline: "Baseline",
+    colorClass:
+      "bg-neutral-400 dark:bg-neutral-600 text-neutral-900 dark:text-neutral-100",
+  },
+];
+
+const maxScaled = Math.max(...scaledData.map((d) => d.size));
+const maxStarter = Math.max(...starterData.map((d) => d.size));
+
+const scenarios = [
+  { id: "scaled", data: scaledData, max: maxScaled, visible: true },
+  { id: "starter", data: starterData, max: maxStarter, visible: false },
+];
+---
+
+<div
+  data-benchmark-widget
+  class="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-xs"
+>
+  <!-- Chart Header & Scenario Tabs -->
+  <div
+    class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-100 dark:border-neutral-800/60"
+  >
+    <div>
+      <div
+        class="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider mb-1"
+      >
+        {t("totalTransferSize")}
+      </div>
+      <p class="text-xs text-neutral-500 dark:text-neutral-400">
+        Playwright Headless Chromium · Real HTTP Transfer Size
+      </p>
+    </div>
+
+    <!-- Scenario Toggle Tabs -->
+    <div
+      class="inline-flex p-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs font-medium self-start sm:self-auto"
+    >
+      <button
+        type="button"
+        data-tab="scaled"
+        class="px-3 py-1.5 rounded-md transition-all duration-150 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-xs font-semibold"
+      >
+        {t("scenario1Title")}
+      </button>
+      <button
+        type="button"
+        data-tab="starter"
+        class="px-3 py-1.5 rounded-md transition-all duration-150 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+      >
+        {t("scenario2Title")}
+      </button>
+    </div>
+  </div>
+
+  <!-- Horizontal Bar Chart Scenarios -->
+  <div class="pt-6">
+    {
+      scenarios.map(({ id, data, max, visible }) => (
+        <div
+          data-scenario={id}
+          class:list={["space-y-4", { hidden: !visible }]}
+        >
+          {data.map((item) => {
+            const widthPercent = Math.max(6, (item.size / max) * 100);
+            return (
+              <div class="group">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                  <div class="flex items-center gap-2">
+                    <span
+                      class={`font-mono font-medium ${item.highlight ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-neutral-800 dark:text-neutral-200"}`}
+                    >
+                      {item.name}
+                    </span>
+                    {item.badge && (
+                      <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div class="flex items-center gap-2 font-mono">
+                    {item.reductionVsBaseline && (
+                      <span
+                        class={`text-[10px] px-1.5 py-0.5 rounded font-medium ${item.highlight ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-semibold" : "text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800"}`}
+                      >
+                        {item.reductionVsBaseline}
+                      </span>
+                    )}
+                    <span
+                      class={`font-semibold ${item.highlight ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-neutral-900 dark:text-white"}`}
+                    >
+                      {item.size.toFixed(1)} KB
+                    </span>
+                  </div>
+                </div>
+
+                <div class="w-full h-3.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden p-0.5">
+                  <div
+                    class={`h-full rounded-full transition-all duration-500 ${item.colorClass}`}
+                    style={`width: ${widthPercent}%`}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    document
+      .querySelectorAll("[data-benchmark-widget]")
+      .forEach((container) => {
+        const btnScaled = container.querySelector("[data-tab='scaled']");
+        const btnStarter = container.querySelector("[data-tab='starter']");
+        const secScaled = container.querySelector("[data-scenario='scaled']");
+        const secStarter = container.querySelector("[data-scenario='starter']");
+
+        if (!btnScaled || !btnStarter || !secScaled || !secStarter) return;
+
+        const activeClasses = [
+          "bg-white",
+          "dark:bg-neutral-700",
+          "text-neutral-900",
+          "dark:text-white",
+          "shadow-xs",
+          "font-semibold",
+        ];
+        const inactiveClasses = ["text-neutral-600", "dark:text-neutral-400"];
+
+        btnScaled.addEventListener("click", () => {
+          secScaled.classList.remove("hidden");
+          secStarter.classList.add("hidden");
+
+          btnScaled.classList.add(...activeClasses);
+          btnScaled.classList.remove(...inactiveClasses);
+
+          btnStarter.classList.remove(...activeClasses);
+          btnStarter.classList.add(...inactiveClasses);
+        });
+
+        btnStarter.addEventListener("click", () => {
+          secScaled.classList.add("hidden");
+          secStarter.classList.remove("hidden");
+
+          btnStarter.classList.add(...activeClasses);
+          btnStarter.classList.remove(...inactiveClasses);
+
+          btnScaled.classList.remove(...activeClasses);
+          btnScaled.classList.add(...inactiveClasses);
+        });
+      });
+  })();
+</script>

@@ -62,7 +62,7 @@ export default {
 
 ```ts
 // i18n/index.ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 
 // 1. Import translation files
 import enUS from "./messages/en-US.ts";
@@ -127,7 +127,7 @@ export default {
 `createI18n` natively supports importing `.json` files as dictionaries without requiring global declaration merging or build plugins. It automatically infers all nested namespaces and key types with full autocomplete and typo checking:
 
 ```ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 import enUS from "./messages/en-US.json";
 import zhHans from "./messages/zh-Hans.json";
 
@@ -152,6 +152,43 @@ t("title_typo");
 >
 > - **JSON Dictionaries**: 100% strong typing for all namespaces and keys with autocomplete and error checks. However, because JSON does not support `as const`, template parameters (e.g. `{name}`) use relaxed type inference.
 > - **TypeScript Dictionaries (`as const`)**: In addition to strong typing for keys, template placeholders (e.g. `{name: string}`, `{count: number}`) receive strict compile-time static type checking.
+
+### Dynamic Imports with `await import`
+
+In modern environments supporting Top-Level Await (such as Astro, Vite, Node 22+, Bun, etc.), dictionary files can be dynamically imported using `await import(...)`:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const enUS = (await import("./messages/en-US.ts")).default;
+const zhHans = (await import("./messages/zh-Hans.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "en-US",
+  messages: { "en-US": enUS, "zh-Hans": zhHans },
+});
+```
+
+Using a functional loader map enables locale code splitting, loading only the active language chunk on demand while preserving complete static typing and autocomplete:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "en-US": () => import("./messages/en-US.ts"),
+  "zh-Hans": () => import("./messages/zh-Hans.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
 
 ## Advanced Translation Features
 
@@ -490,7 +527,7 @@ Two usage modes are available:
 Easily access a formatter bound to your global configuration:
 
 ```ts
-import { createI18n } from "ts-intl";
+import { createI18n } from "@aaakul/ts-intl";
 
 export const { getTranslations, getFormatter } = createI18n({
   defaultLanguage: "en-US",
@@ -536,7 +573,7 @@ formatter.number(1200000, "compact");
 Suitable for modules where `createI18n` is not needed or custom options are required:
 
 ```ts
-import { createFormatter } from "ts-intl";
+import { createFormatter } from "@aaakul/ts-intl";
 
 const formatter = createFormatter({
   locale: "en-US",
@@ -601,7 +638,7 @@ formatter.displayName("US", { type: "region" });
 Provides unified runtime error monitoring and custom message fallback strategies:
 
 ```ts
-import { createI18n, I18nError, I18nErrorCode } from "ts-intl";
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
 
 export const i18n = createI18n({
   defaultLanguage: "en-US",

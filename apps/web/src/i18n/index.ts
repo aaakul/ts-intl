@@ -1,7 +1,8 @@
 import { createAstroI18n } from "ts-intl-astro";
-import enUS from "./messages/en-US";
-import zhHans from "./messages/zh-Hans";
-import jaJP from "./messages/ja-JP";
+
+const enUS = (await import("./messages/en-US.ts")).default;
+const zhHans = (await import("./messages/zh-Hans.ts")).default;
+const jaJP = (await import("./messages/ja-JP.ts")).default;
 
 export const {
   useTranslations,

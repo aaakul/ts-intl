@@ -1,0 +1,99 @@
+---
+title: "Benchmark & Performance"
+description: "Measures the real network transfer size of all i18n assets during SSG pre-rendering and client-side hydration."
+order: 8
+lang: "en-US"
+---
+
+import BenchmarkChart from "@/components/BenchmarkChart.astro";
+
+# Benchmark & Performance
+
+This benchmark reproduces the test architecture of the [paraglide-js benchmark](https://github.com/opral/paraglide-js/tree/main/benchmark). It **simulates modern multi-locale Web applications during initial pre-rendering and client-side hydration, measuring the total network transfer size (HTML + runtime JS + locale chunks) required by the client**.
+
+> **Scenario Context**: In a pure zero-JS static MPA, the server directly delivers localized HTML with no client-side i18n overhead. This benchmark simulates **modern full-stack applications with client-side hydration, dynamic interactions (e.g. form validation, client-side notifications), and routing**, measuring the total static assets downloaded to reach an interactive state.
+
+Evaluated libraries and configurations:
+
+- **`ts-intl`** (Lightweight runtime): Evaluated in both `default` (bundled) and `locale-splitting` (dynamic chunk loading) modes.
+- **`paraglide`** (Compiler-based approach): Evaluated in both `default` (bundled compiled functions) and `experimental-middleware-locale-splitting` (route middleware splitting) modes.
+- **`i18next`** (Traditional runtime): Evaluated in both `default` (bundled JSON dictionaries) and `http-backend` (asynchronous client-side fetch) modes.
+
+---
+
+## Transfer Size Comparison
+
+Measurements were captured using Playwright Headless Chromium, tracking all successful 2xx/3xx HTTP network transfer sizes until `networkidle`:
+
+<div class="my-6">
+  <BenchmarkChart lang="en-US" />
+</div>
+
+---
+
+## Benchmark Data Matrix
+
+Baseline workload: 100 translation messages rendered on the page (20% containing dynamic interpolation variables).
+
+### Scenario 1: Scaled App (10 Locales · Namespace of 500 Messages)
+
+In this scenario, the namespace contains 500 messages, of which 100 are referenced and rendered:
+
+| Library & Configuration              | Total Transfer Size | vs. i18next Default | Technical Characteristics                                               |
+| :----------------------------------- | :------------------ | :------------------ | :---------------------------------------------------------------------- |
+| **paraglide (middleware splitting)** | **36.3 KB**         | -91.4%              | Compiled to JS functions; tree-shakes unused keys; splits active locale |
+| **ts-intl (locale-splitting)**       | **57.8 KB**         | -86.2%              | ~2 KB runtime core; transfers only active locale 500-message JSON       |
+| **paraglide (default)**              | **76.6 KB**         | -81.8%              | Tree-shakes unused keys; bundles compiled functions across 10 locales   |
+| **i18next (http-backend)**           | **188.7 KB**        | -55.1%              | Asynchronously fetches active locale JSON; includes i18next runtime     |
+| **ts-intl (default bundled)**        | **360.0 KB**        | -14.4%              | Bundles full 500-message JSON dictionaries across all 10 locales        |
+| **i18next (default bundled)**        | **420.4 KB**        | Baseline            | Bundles full 500-message JSON across 10 locales + full i18next runtime  |
+
+### Scenario 2: Starter App (5 Locales · Namespace of 100 Messages)
+
+In this scenario, the namespace contains 100 messages, and all 100 are referenced and rendered:
+
+| Library & Configuration              | Total Transfer Size | vs. i18next Default | Technical Characteristics                                           |
+| :----------------------------------- | :------------------ | :------------------ | :------------------------------------------------------------------ |
+| **ts-intl (locale-splitting)**       | **29.7 KB**         | -83.8%              | ~2 KB runtime core; transfers only active locale 100-message JSON   |
+| **paraglide (middleware splitting)** | **36.1 KB**         | -80.3%              | Transfers only active locale 100 compiled message functions         |
+| **paraglide (default)**              | **47.1 KB**         | -74.3%              | Bundles 100 compiled message functions across 5 locales             |
+| **ts-intl (default bundled)**        | **56.9 KB**         | -69.0%              | Bundles 100-message JSON dictionaries across all 5 locales          |
+| **i18next (http-backend)**           | **167.5 KB**        | -8.6%               | Asynchronously fetches active locale JSON; includes i18next runtime |
+| **i18next (default bundled)**        | **183.3 KB**        | Baseline            | Bundles 100-message JSON across 5 locales + full i18next runtime    |
+
+---
+
+## Architectural Analysis
+
+### 1. Tree-Shaking in Compiler-Based Solutions
+
+- **Trade-off**: `paraglide` compiles each message into a discrete JavaScript function. Bundlers (Rollup / esbuild) can analyze AST references and eliminate unused functions at build time. In Scenario 1, the 400 unused messages are omitted from the bundle entirely, resulting in the lowest payload (36.3 KB).
+- **Consideration**: Requires a dedicated code generation build step and cannot load arbitrary runtime JSON dictionaries dynamically.
+
+### 2. Chunk Splitting in Lightweight Runtime Libraries
+
+- **Zero Code Generation**: `ts-intl` is a pure runtime TypeScript library. It consumes standard TypeScript objects or JSON dictionaries directly without compile-time code generation.
+- **Flat Multi-Locale Scaling**: In `locale-splitting` mode, bundlers split each locale into a separate chunk. The browser only fetches the active language chunk. Consequently, scaling from 5 to 10+ languages does not increase single-page initial transfer size (~30 KB to ~57 KB).
+- **Minimal Runtime Overhead**: The `ts-intl` runtime core is approximately 2 KB minified and delegates number, date, and plural formatting to native Web standard `Intl` APIs without external polyfills.
+
+### 3. Sources of Overhead in Traditional Runtimes
+
+- `i18next` includes comprehensive configuration management, event emitters, AST parsers, and custom formatters, resulting in a larger baseline runtime bundle.
+- In default configurations, importing all locale dictionaries into a single entry point causes all languages to be bundled into the initial client chunk.
+
+---
+
+## Reproducing the Benchmark Locally
+
+The benchmark suite is located in [`apps/benchmark`](https://github.com/aaakul/ts-intl/tree/main/apps/benchmark). You can reproduce these measurements locally:
+
+```bash
+# 1. Install Chromium shell (one-time setup)
+pnpm --filter @aaakul/ts-intl-benchmark prebench
+
+# 2. Run the complete benchmark matrix (SSG build + Playwright measurement)
+pnpm --filter @aaakul/ts-intl-benchmark bench
+
+# 3. Launch the local preview server (view visualization at http://localhost:3005)
+pnpm --filter @aaakul/ts-intl-benchmark preview
+```

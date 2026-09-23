@@ -49,4 +49,23 @@ export default {
     previewTitle: "Live Preview",
     loading: "Loading playground...",
   },
+  benchmark: {
+    badge: "Benchmark",
+    title: "Network Transfer Size Benchmark",
+    desc: "Measures the real network transfer size of all i18n assets during initial pre-rendering and client-side hydration.",
+    viewFullDocs: "View Benchmark Report",
+    scenario1Title: "10 Locales · 500 Messages",
+    scenario2Title: "5 Locales · 100 Messages",
+    totalTransferSize: "Network Transfer Size (KB)",
+    modeLocaleSplitting: "locale-splitting",
+    modeBundled: "bundled",
+    modeMiddleware: "middleware",
+    modeHttp: "http-backend",
+    takeaway1Title: "Runtime Dependencies & Footprint",
+    takeaway1Desc:
+      "i18next bundles full parser engines and plugin runtimes, incurring baseline overhead. ts-intl has zero runtime dependencies (~2 KB core) and, in locale-splitting mode, loads only the active locale dictionary.",
+    takeaway2Title: "Compiler vs. Runtime Splitting",
+    takeaway2Desc:
+      "Paraglide compiles messages to JS functions and tree-shakes unused keys. ts-intl is a runtime library requiring no code generation, using standard dynamic imports to prevent multi-locale bundle accumulation.",
+  },
 } as const;

@@ -1,0 +1,676 @@
+{
+  "scenarios": [
+    {
+      "locales": 5,
+      "usedMessages": 100,
+      "namespaceSize": 100,
+      "namespaceSizeFactor": 1,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 56.9
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 29.7
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 47.1
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.1
+        },
+        {
+          "library": "i18next (default)",
+          "size": 183.3
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 167.5
+        }
+      ]
+    },
+    {
+      "locales": 5,
+      "usedMessages": 100,
+      "namespaceSize": 200,
+      "namespaceSizeFactor": 2,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 89.8
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 36.6
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 47.1
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.1
+        },
+        {
+          "library": "i18next (default)",
+          "size": 209.4
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 172.7
+        }
+      ]
+    },
+    {
+      "locales": 5,
+      "usedMessages": 100,
+      "namespaceSize": 500,
+      "namespaceSizeFactor": 5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 188.7
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 57.3
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 47.1
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.1
+        },
+        {
+          "library": "i18next (default)",
+          "size": 287.8
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 188.4
+        }
+      ]
+    },
+    {
+      "locales": 5,
+      "usedMessages": 100,
+      "namespaceSize": 1000,
+      "namespaceSizeFactor": 10,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 358.2
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 91.7
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 47.1
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.1
+        },
+        {
+          "library": "i18next (default)",
+          "size": 418.5
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 214.6
+        }
+      ]
+    },
+    {
+      "locales": 5,
+      "usedMessages": 200,
+      "namespaceSize": 200,
+      "namespaceSizeFactor": 1,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 99.2
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 44.4
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 88
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66
+        },
+        {
+          "library": "i18next (default)",
+          "size": 218.5
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 180.6
+        }
+      ]
+    },
+    {
+      "locales": 5,
+      "usedMessages": 200,
+      "namespaceSize": 500,
+      "namespaceSizeFactor": 2.5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 198.1
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 65
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 88
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66
+        },
+        {
+          "library": "i18next (default)",
+          "size": 296.9
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 196.3
+        }
+      ]
+    },
+    {
+      "locales": 5,
+      "usedMessages": 200,
+      "namespaceSize": 1000,
+      "namespaceSizeFactor": 5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 367.6
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 99.5
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 88
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66
+        },
+        {
+          "library": "i18next (default)",
+          "size": 427.6
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 222.4
+        }
+      ]
+    },
+    {
+      "locales": 10,
+      "usedMessages": 100,
+      "namespaceSize": 100,
+      "namespaceSizeFactor": 1,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 91.8
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 30.3
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 76.6
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.3
+        },
+        {
+          "library": "i18next (default)",
+          "size": 211.5
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 167.8
+        }
+      ]
+    },
+    {
+      "locales": 10,
+      "usedMessages": 100,
+      "namespaceSize": 200,
+      "namespaceSizeFactor": 2,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 157.7
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 37.2
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 76.6
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.3
+        },
+        {
+          "library": "i18next (default)",
+          "size": 263.7
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 173
+        }
+      ]
+    },
+    {
+      "locales": 10,
+      "usedMessages": 100,
+      "namespaceSize": 500,
+      "namespaceSizeFactor": 5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 360
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 57.8
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 76.6
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.3
+        },
+        {
+          "library": "i18next (default)",
+          "size": 420.4
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 188.7
+        }
+      ]
+    },
+    {
+      "locales": 10,
+      "usedMessages": 100,
+      "namespaceSize": 1000,
+      "namespaceSizeFactor": 10,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 704.5
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 92.3
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 76.6
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.4
+        },
+        {
+          "library": "i18next (default)",
+          "size": 681.9
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 214.8
+        }
+      ]
+    },
+    {
+      "locales": 10,
+      "usedMessages": 200,
+      "namespaceSize": 200,
+      "namespaceSizeFactor": 1,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 169.2
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 44.9
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 146.6
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66.2
+        },
+        {
+          "library": "i18next (default)",
+          "size": 274.4
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 180.8
+        }
+      ]
+    },
+    {
+      "locales": 10,
+      "usedMessages": 200,
+      "namespaceSize": 500,
+      "namespaceSizeFactor": 2.5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 371.5
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 65.6
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 146.6
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66.2
+        },
+        {
+          "library": "i18next (default)",
+          "size": 431.1
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 196.5
+        }
+      ]
+    },
+    {
+      "locales": 10,
+      "usedMessages": 200,
+      "namespaceSize": 1000,
+      "namespaceSizeFactor": 5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 716
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 100
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 146.6
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66.3
+        },
+        {
+          "library": "i18next (default)",
+          "size": 692.6
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 222.7
+        }
+      ]
+    },
+    {
+      "locales": 20,
+      "usedMessages": 100,
+      "namespaceSize": 100,
+      "namespaceSizeFactor": 1,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 161.6
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 31.4
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 135.5
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.9
+        },
+        {
+          "library": "i18next (default)",
+          "size": 267.7
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 168.3
+        }
+      ]
+    },
+    {
+      "locales": 20,
+      "usedMessages": 100,
+      "namespaceSize": 200,
+      "namespaceSizeFactor": 2,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 295.2
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 38.3
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 135.5
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.9
+        },
+        {
+          "library": "i18next (default)",
+          "size": 372.3
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 173.5
+        }
+      ]
+    },
+    {
+      "locales": 20,
+      "usedMessages": 100,
+      "namespaceSize": 500,
+      "namespaceSizeFactor": 5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 708.2
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 59
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 135.5
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.9
+        },
+        {
+          "library": "i18next (default)",
+          "size": 685.7
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 189.2
+        }
+      ]
+    },
+    {
+      "locales": 20,
+      "usedMessages": 100,
+      "namespaceSize": 1000,
+      "namespaceSizeFactor": 10,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 1397.2
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 93.4
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 135.6
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 36.9
+        },
+        {
+          "library": "i18next (default)",
+          "size": 1208.6
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 215.3
+        }
+      ]
+    },
+    {
+      "locales": 20,
+      "usedMessages": 200,
+      "namespaceSize": 200,
+      "namespaceSizeFactor": 1,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 310.7
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 46.1
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 265.3
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66.8
+        },
+        {
+          "library": "i18next (default)",
+          "size": 386
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 181.3
+        }
+      ]
+    },
+    {
+      "locales": 20,
+      "usedMessages": 200,
+      "namespaceSize": 500,
+      "namespaceSizeFactor": 2.5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 723.8
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 66.7
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 265.3
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66.8
+        },
+        {
+          "library": "i18next (default)",
+          "size": 699.5
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 197
+        }
+      ]
+    },
+    {
+      "locales": 20,
+      "usedMessages": 200,
+      "namespaceSize": 1000,
+      "namespaceSizeFactor": 5,
+      "results": [
+        {
+          "library": "ts-intl (default)",
+          "size": 1412.7
+        },
+        {
+          "library": "ts-intl (locale-splitting)",
+          "size": 101.2
+        },
+        {
+          "library": "paraglide (default)",
+          "size": 265.3
+        },
+        {
+          "library": "paraglide (experimental-middleware-locale-splitting)",
+          "size": 66.8
+        },
+        {
+          "library": "i18next (default)",
+          "size": 1222.4
+        },
+        {
+          "library": "i18next (http-backend)",
+          "size": 223.1
+        }
+      ]
+    }
+  ]
+}

@@ -145,3 +145,44 @@ export const { getTranslations } = createI18n({
   messages: { "ja-JP": jaJP, "en-US": enUS },
 });
 ```
+
+### 動的インポート（`await import`）
+
+Top-Level Await をサポートするモダンな実行環境（Astro、Vite、Node 22+、Bun など）では、`await import(...)` を使用して辞書ファイルを動的に読み込むことができます：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const jaJP = (await import("./messages/ja-JP.ts")).default;
+const enUS = (await import("./messages/en-US.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "ja-JP",
+  messages: { "ja-JP": jaJP, "en-US": enUS },
+});
+```
+
+#### 言語ごとのコード分割（Locale Code Splitting）
+
+多言語プロジェクトにおいて、すべての辞書が同一のクライアントバンドルに含まれるのを防ぐため、ローダーマップを定義してアクティブな言語のみをオンデマンドで読み込むことが可能です：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "ja-JP": () => import("./messages/ja-JP.ts"),
+  "en-US": () => import("./messages/en-US.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
+
+> **型安全性**：辞書ファイルが `export default { ... } as const;` または JSON 形式である限り、`await import` による動的インポートでも名前空間やキー名の補完、パラメータ型の抽出（`{param: type}`）といった静的型チェックが完全に維持されます。

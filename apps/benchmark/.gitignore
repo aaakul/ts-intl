@@ -1,0 +1,8 @@
+node_modules
+dist
+messages
+project.inlang
+src/paraglide
+src/pages
+src/i18n/generated.ts
+
