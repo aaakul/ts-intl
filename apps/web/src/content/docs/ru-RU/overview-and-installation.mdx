@@ -1,0 +1,190 @@
+---
+title: "Обзор и установка"
+description: "Введение в ts-intl, основные принципы архитектуры и руководство по установке."
+order: 1
+lang: "ru-RU"
+---
+
+# Обзор и установка
+
+`ts-intl` — это библиотека интернационализации (i18n) без сторонних зависимостей, не привязанная к конкретному фреймворку (framework-agnostic), со строгой типобезопасностью.
+
+Она предлагает API, спроектированный в стиле `next-intl`, но не зависит от Next.js или какого-либо конкретного UI-фреймворка, что делает её идеальным выбором для современной разработки на TypeScript.
+
+## Принципы архитектуры
+
+- **Ноль зависимостей**: Ноль зависимостей во время выполнения (zero runtime dependencies) и отсутствие этапа генерации кода при сборке.
+- **Независимость от фреймворков**: Поддержка Astro, React, Vue, Svelte, Node.js, Bun и браузерных окружений.
+- **Строгая типобезопасность**: Статическая проверка типов для ключей перевода, параметров динамической интерполяции, пространств имён и структуры многоязычных словарей.
+
+## Установка
+
+Установите `@aaakul/ts-intl` с помощью пакетного менеджера:
+
+```bash
+# pnpm
+pnpm add @aaakul/ts-intl
+
+# npm
+npm install @aaakul/ts-intl
+
+# yarn
+yarn add @aaakul/ts-intl
+
+# bun
+bun add @aaakul/ts-intl
+```
+
+## Быстрый старт
+
+### 1. Определение словарей сообщений
+
+Объявляйте TypeScript-объекты с утверждением `as const`, чтобы система типов могла вывести имена ключей и типы параметров:
+
+```ts
+// messages/ru-RU.ts
+export default {
+  common: {
+    title: "Панель управления",
+    greeting: "Привет, {name: string}!",
+    items: {
+      one: "1 элемент в списке",
+      few: "{count} элемента в списке",
+      many: "{count} элементов в списке",
+      other: "{count} элемента в списке",
+    },
+  },
+} as const;
+```
+
+```ts
+// messages/en-US.ts
+export default {
+  common: {
+    title: "System Dashboard",
+    greeting: "Hello, {name: string}!",
+    items: {
+      one: "1 item in total",
+      other: "{count} items in total",
+    },
+  },
+} as const;
+```
+
+### 2. Инициализация экземпляра i18n
+
+```ts
+// i18n.ts
+import { createI18n } from "@aaakul/ts-intl";
+import ruRU from "./messages/ru-RU";
+import enUS from "./messages/en-US";
+
+export const {
+  getTranslations,
+  getFormatter,
+  isSupportedLanguage,
+  languages,
+  defaultLanguage,
+} = createI18n({
+  defaultLanguage: "ru-RU",
+  messages: {
+    "ru-RU": ruRU,
+    "en-US": enUS,
+  },
+});
+
+export type Language = (typeof languages)[number];
+```
+
+### 3. Получение и вызов функций перевода
+
+```ts
+import { getTranslations } from "./i18n";
+
+const t = getTranslations("ru-RU", "common");
+
+// 1. Статический ключ
+const title = t("title");
+// Выведенный тип: (key: "title") => string
+// Вывод: "Панель управления"
+
+// 2. Интерполяция с параметрами
+const greeting = t("greeting", { name: "Разработчик" });
+// Выведенный тип: (key: "greeting", params: { name: string }) => string
+// Вывод: "Привет, Разработчик!"
+
+// 3. Обработка правил множественного числа
+const items = t("items", { count: 5 });
+// Выведенный тип: (key: "items", params: { count: number }) => string
+// Вывод: "5 элементов в списке"
+```
+
+## Форматы словарей
+
+### Статические определения в TypeScript (рекомендуется)
+
+Определяйте словари с использованием `as const`, чтобы обеспечить валидацию ключей на этапе компиляции и извлечение типов параметров:
+
+```ts
+export default {
+  auth: {
+    login: "Войти",
+    welcome: "С возвращением, {username: string}!",
+  },
+} as const;
+```
+
+### Словари JSON
+
+_Примечание_: Формат JSON также поддерживает автодополнение ключей и проверку орфографии. Поскольку JSON не поддерживает `as const`, параметры переменных шаблона будут выводиться с нестрогими (широкими) типами.
+
+```ts
+import ruRU from "./messages/ru-RU.json";
+import enUS from "./messages/en-US.json";
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "ru-RU",
+  messages: { "ru-RU": ruRU, "en-US": enUS },
+});
+```
+
+### Динамический импорт с помощью `await import`
+
+В современных средах выполнения с поддержкой Top-Level Await (таких как Astro, Vite, Node 22+, Bun и др.), файлы словарей можно импортировать динамически через `await import(...)`:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const ruRU = (await import("./messages/ru-RU.ts")).default;
+const enUS = (await import("./messages/en-US.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "ru-RU",
+  messages: { "ru-RU": ruRU, "en-US": enUS },
+});
+```
+
+#### Разделение кода по локалям (Locale Code Splitting)
+
+В приложениях с поддержкой нескольких локалей сопоставление функций-загрузчиков (loader map) позволяет сборщикам разделить словарь каждого языка в отдельный чанк, загружая только активную локаль по требованию:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "ru-RU": () => import("./messages/ru-RU.ts"),
+  "en-US": () => import("./messages/en-US.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
+
+> **Типобезопасность**: До тех пор, пока файлы словарей экспортируют `as const` или используют JSON, динамически импортированные словари через `await import` полностью сохраняют автодополнение пространств имён, проверку строковых литералов ключей и извлечение типов параметров (`{param: type}`).

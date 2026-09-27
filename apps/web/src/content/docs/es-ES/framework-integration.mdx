@@ -1,0 +1,29 @@
+---
+title: "Gestión de errores y fallback"
+description: "Configurar la gestión de errores y las estrategias de respaldo."
+order: 6
+lang: "es-ES"
+---
+
+# Gestión de errores y fallback
+
+Configura las funciones de retrollamada (callbacks) para errores y las estrategias de respaldo (fallback) ante mensajes faltantes durante la inicialización:
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "es-ES",
+  messages: { "es-ES": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] Falta la clave de traducción "${error.key}" (idioma: ${error.lang})`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[Traducción faltante: ${key}]`;
+  },
+});
+```

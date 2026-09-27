@@ -1,0 +1,111 @@
+---
+title: "Sintaxis ICU y renderizado de texto enriquecido"
+description: "Reglas de plurales, ordinales, ramas condicionales y sintaxis de renderizado para componentes de texto enriquecido."
+order: 4
+lang: "es-ES"
+---
+
+# Sintaxis ICU y renderizado de texto enriquecido
+
+`ts-intl` es compatible con la sintaxis estándar de ICU MessageFormat 1.x.
+
+## Soporte de plurales (Pluralización)
+
+### Objetos de plural estructurados
+
+Admite formatos de objetos anidados según las categorías estándar de plural de CLDR (`zero`, `one`, `two`, `few`, `many`, `other`):
+
+```ts
+const messages = {
+  cart: {
+    zero: "Tu carrito está vacío",
+    one: "1 artículo en tu carrito",
+    other: "{count} artículos en tu carrito",
+  },
+} as const;
+
+const t = getTranslations("es-ES");
+
+t("cart", { count: 0 }); // "Tu carrito está vacío"
+t("cart", { count: 1 }); // "1 artículo en tu carrito"
+t("cart", { count: 8 }); // "8 artículos en tu carrito"
+```
+
+> **Nota**: En la especificación CLDR, el español (al igual que el inglés) solo define las categorías de plural `one` y `other` (`ts-intl` añade soporte integrado adicional para `zero` cuando `count === 0`). Si necesitas un texto diferenciado para números específicos, se recomienda usar la sintaxis en línea `plural` de ICU que se muestra a continuación (como `=0`).
+
+### Sintaxis en línea `plural` de ICU
+
+```ts
+const messages = {
+  inbox:
+    "Tienes {count, plural, =0 {cero mensajes no leídos} one {# mensaje} other {# mensajes}}.",
+} as const;
+
+const t = getTranslations("es-ES");
+
+t("inbox", { count: 0 }); // "Tienes cero mensajes no leídos."
+t("inbox", { count: 1 }); // "Tienes 1 mensaje."
+t("inbox", { count: 12 }); // "Tienes 12 mensajes."
+```
+
+## Formato de ordinales (`selectordinal`)
+
+Se utiliza para manejar expresiones ordinales (la coincidencia exacta `=` tiene prioridad sobre las reglas de categoría):
+
+```ts
+const messages = {
+  podium:
+    "¡Terminaste en {rank, selectordinal, =1 {primer} =2 {segundo} =3 {tercer} other {#{º}}} lugar!",
+} as const;
+
+const t = getTranslations("es-ES");
+
+t("podium", { rank: 1 }); // "¡Terminaste en primer lugar!"
+t("podium", { rank: 4 }); // "¡Terminaste en 4º lugar!"
+```
+
+## Selección de ramas condicionales (`select`)
+
+Asocia diferentes textos según enumeraciones de estado o valores de categoría:
+
+```ts
+const messages = {
+  roleBadge:
+    "{role, select, admin {Administrador} moderator {Moderador} other {Miembro}}",
+} as const;
+
+const t = getTranslations("es-ES");
+
+t("roleBadge", { role: "admin" }); // "Administrador"
+t("roleBadge", { role: "guest" }); // "Miembro"
+```
+
+## Interpolación general de texto enriquecido `t.rich()`
+
+Asigna texto a componentes de frontend o nodos del DOM mediante etiquetas de tipo XML, evitando los riesgos de seguridad XSS asociados a `dangerouslySetInnerHTML`:
+
+```ts
+const messages = {
+  notice:
+    "Por favor, revisa nuestros <terms>Términos de servicio</terms> y acepta la <privacy>Política de privacidad</privacy> antes de enviar.",
+} as const;
+
+const t = getTranslations("es-ES");
+
+// Mapeo directo a componentes en React / Vue
+const elements = t.rich("notice", {
+  terms: (children) => <a href="/terms" className="underline">{children}</a>,
+  privacy: (children) => <a href="/privacy" className="underline">{children}</a>,
+});
+```
+
+## Renderizado de cadenas con etiquetas HTML `t.markup()`
+
+Se utiliza para generar cadenas de texto que contienen etiquetas HTML seguras:
+
+```ts
+const html = t.markup("notice", {
+  terms: (c) => `<a href="/terms">${c}</a>`,
+  privacy: (c) => `<a href="/privacy">${c}</a>`,
+});
+```

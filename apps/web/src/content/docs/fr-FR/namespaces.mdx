@@ -1,0 +1,71 @@
+---
+title: "Espaces de noms et portée"
+description: "Organisation des dictionnaires de traduction avec les espaces de noms et méthodes d'extraction de données."
+order: 3
+lang: "fr-FR"
+---
+
+# Espaces de noms et portée
+
+Organiser les clés de traduction par module fonctionnel ou par page permet d'éviter les collisions de clés et de simplifier les chemins d'appel.
+
+## Traducteurs avec portée (Scoped Translators)
+
+Passer un espace de noms comme second argument lors de l'appel à `getTranslations` renvoie une fonction de traduction restreinte à cet espace de noms :
+
+```ts
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "Statistiques en direct",
+      refresh: "Actualiser les données",
+    },
+  },
+} as const;
+
+// Limiter la portée à l'espace de noms imbriqué
+const t = getTranslations("fr-FR", "admin.dashboard");
+
+t("metrics"); // "Statistiques en direct"
+t("refresh"); // "Actualiser les données"
+```
+
+## Traducteurs globaux à plat
+
+Si le paramètre d'espace de noms est omis, `getTranslations` renvoie un traducteur racine prenant en charge l'accès aux clés imbriquées via des chemins avec notation pointée :
+
+```ts
+const t = getTranslations("fr-FR");
+
+t("admin.dashboard.metrics"); // "Statistiques en direct"
+```
+
+## Extraction de données brutes avec `t.raw()`
+
+Lorsque vous devez obtenir directement des structures brutes telles que des objets de configuration ou des tableaux, vous pouvez utiliser `t.raw()` :
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("fr-FR");
+
+const endpoints = t.raw("config.endpoints");
+// Type inféré : readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## Vérification de l'existence d'une clé avec `t.has()`
+
+Vérifie si une clé spécifiée existe dans la langue courante ou dans la langue de repli, sans déclencher d'avertissement de clé manquante :
+
+```ts
+const t = getTranslations("fr-FR", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

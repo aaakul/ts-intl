@@ -11,57 +11,7 @@ interface Props {
 const { lang } = Astro.props;
 const t = getTranslations(lang, "playground");
 const initialTemplate = TEMPLATES[lang] || TEMPLATES["en-US"];
-
-const staticPreviews: Record<
-  SupportedLanguage,
-  {
-    title: string;
-    role: string;
-    bannerPrefix: string;
-    badgeText: string;
-    bannerSuffix: string;
-    cart: string;
-    invoice: string;
-    delivery: string;
-    btn: string;
-  }
-> = {
-  "zh-Hans": {
-    title: "你好，开发者！",
-    role: "专业版会员",
-    bannerPrefix: "限时促销：",
-    badgeText: "全场 8 折",
-    bannerSuffix: "",
-    cart: "购物车共有 3 件商品",
-    invoice: "结算总额：¥899.50",
-    delivery: "预计送达：2天后",
-    btn: "立即结算",
-  },
-  "en-US": {
-    title: "Hello, Alex!",
-    role: "Pro Member",
-    bannerPrefix: "Flash Sale: ",
-    badgeText: "20% OFF",
-    bannerSuffix: " on all items",
-    cart: "3 items in cart",
-    invoice: "Total: $129.99",
-    delivery: "Estimated delivery: in 2 days",
-    btn: "Checkout Now",
-  },
-  "ja-JP": {
-    title: "こんにちは、田中様！",
-    role: "Proメンバー",
-    bannerPrefix: "タイムセール：",
-    badgeText: "全品 20% OFF",
-    bannerSuffix: " 実施中！",
-    cart: "カート内に 3 件の商品",
-    invoice: "お支払い合計：¥15,800",
-    delivery: "お届け予定：2日後",
-    btn: "レジに進む",
-  },
-};
-
-const preview = staticPreviews[lang] || staticPreviews["en-US"];
+const preview = initialTemplate.preview;
 ---
 
 <div

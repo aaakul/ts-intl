@@ -1,0 +1,101 @@
+---
+title: "Форматтеры Web Intl"
+description: "Типобезопасные обёртки и форматтеры с кэшированием экземпляров на базе стандартных Web API Intl."
+order: 5
+lang: "ru-RU"
+---
+
+# Форматтеры Web Intl
+
+Частое создание экземпляров `Intl.NumberFormat` или `Intl.DateTimeFormat` влечёт за собой лишние накладные расходы на производительность. `ts-intl` инкапсулирует стандартные Web API Intl и предоставляет встроенный механизм кэширования экземпляров.
+
+## Получение экземпляров форматтера
+
+### Способ 1: Получение `getFormatter` через `createI18n` (рекомендуется)
+
+Этот подход напрямую наследует предустановленные правила форматирования, часовой пояс и конфигурацию обработки ошибок из глобальных настроек:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+export const { getTranslations, getFormatter } = createI18n({
+  defaultLanguage: "ru-RU",
+  formats: {
+    number: {
+      rub: { style: "currency", currency: "RUB" },
+      compact: { notation: "compact" },
+    },
+    dateTime: {
+      short: { dateStyle: "short" },
+    },
+  },
+  messages: {
+    "ru-RU": {},
+  },
+});
+
+const formatter = getFormatter("ru-RU");
+```
+
+### Способ 2: Независимый вызов `createFormatter(options)`
+
+Подходит для отдельных компонентов или служебных модулей, не зависящих от полноценного экземпляра i18n:
+
+```ts
+import { createFormatter } from "@aaakul/ts-intl";
+
+const formatter = createFormatter({
+  locale: "ru-RU",
+  formats: {
+    number: { rub: { style: "currency", currency: "RUB" } },
+  },
+});
+```
+
+## Основные возможности форматирования
+
+### Форматирование чисел и валют
+
+```ts
+formatter.number(1234567.89);
+// "1 234 567,89"
+
+formatter.number(2500, "rub");
+// "2 500,00 ₽"
+
+formatter.number(1500000, "compact");
+// "1,5 млн"
+```
+
+### Дата и время
+
+```ts
+formatter.dateTime(new Date(), { dateStyle: "long" });
+// "18 сентября 2026 г."
+
+formatter.dateTimeRange(new Date("2026-09-01"), new Date("2026-09-05"));
+// "01.09.2026 – 05.09.2026"
+```
+
+### Вычисление относительного времени
+
+Автоматически подбирает единицы времени на основе разницы во времени:
+
+```ts
+const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+formatter.relativeTime(twoHoursAgo);
+// "2 часа назад"
+```
+
+### Списки и локализованные отображаемые имена
+
+```ts
+formatter.list(["TypeScript", "Astro", "UnoCSS"]);
+// "TypeScript, Astro и UnoCSS"
+
+formatter.displayName("ru-RU", { type: "language" });
+// "русский (Россия)"
+
+formatter.displayName("en", { type: "language" });
+// "английский"
+```

@@ -1,0 +1,111 @@
+---
+title: "ICU-Syntax & Rich-Text-Rendering"
+description: "Pluralregeln, Ordinalzahlen, Bedingungsverzweigungen und Syntax für das Rendern von Rich-Text-Komponenten."
+order: 4
+lang: "de-DE"
+---
+
+# ICU-Syntax & Rich-Text-Rendering
+
+`ts-intl` unterstützt die standardmäßige Syntax von ICU MessageFormat 1.x.
+
+## Pluralunterstützung (Pluralisierung)
+
+### Strukturierte Plural-Objekte
+
+Unterstützt verschachtelte Objektformen basierend auf den Standard-Pluralkategorien von CLDR (`zero`, `one`, `two`, `few`, `many`, `other`):
+
+```ts
+const messages = {
+  cart: {
+    zero: "Ihr Warenkorb ist leer",
+    one: "1 Artikel in Ihrem Warenkorb",
+    other: "{count} Artikel in Ihrem Warenkorb",
+  },
+} as const;
+
+const t = getTranslations("de-DE");
+
+t("cart", { count: 0 }); // "Ihr Warenkorb ist leer"
+t("cart", { count: 1 }); // "1 Artikel in Ihrem Warenkorb"
+t("cart", { count: 8 }); // "8 Artikel in Ihrem Warenkorb"
+```
+
+> **Hinweis**: Gemäß der CLDR-Spezifikation sind für das Deutsche wie für das Englische standardmäßig die Pluralkategorien `one` und `other` definiert (`ts-intl` bietet zusätzlich integrierte Unterstützung für `zero`, wenn `count === 0`). Wenn Sie für bestimmte Zahlen abweichende Formulierungen benötigen, empfiehlt sich die nachfolgende Inline-ICU-`plural`-Syntax (wie `=0`).
+
+### Inline-ICU-Syntax für `plural`
+
+```ts
+const messages = {
+  inbox:
+    "Sie haben {count, plural, =0 {keine ungelesenen Nachrichten} one {# Nachricht} other {# Nachrichten}}.",
+} as const;
+
+const t = getTranslations("de-DE");
+
+t("inbox", { count: 0 }); // "Sie haben keine ungelesenen Nachrichten."
+t("inbox", { count: 1 }); // "Sie haben 1 Nachricht."
+t("inbox", { count: 12 }); // "Sie haben 12 Nachrichten."
+```
+
+## Formatierung von Ordinalzahlen (`selectordinal`)
+
+Wird verwendet, um Ausdrücke mit Rang- oder Ordnungszahlen zu behandeln (die exakte Übereinstimmung `=` hat Vorrang vor Kategorieregeln):
+
+```ts
+const messages = {
+  podium:
+    "Sie haben den {rank, selectordinal, =1 {1.} =2 {2.} =3 {3.} other {#.}} Platz belegt!",
+} as const;
+
+const t = getTranslations("de-DE");
+
+t("podium", { rank: 1 }); // "Sie haben den 1. Platz belegt!"
+t("podium", { rank: 4 }); // "Sie haben den 4. Platz belegt!"
+```
+
+## Bedingte Verzweigungsauswahl (`select`)
+
+Wählt unterschiedliche Texte basierend auf Status-Enums oder Kategoriewerten aus:
+
+```ts
+const messages = {
+  roleBadge:
+    "{role, select, admin {Administrator} moderator {Moderator} other {Mitglied}}",
+} as const;
+
+const t = getTranslations("de-DE");
+
+t("roleBadge", { role: "admin" }); // "Administrator"
+t("roleBadge", { role: "guest" }); // "Mitglied"
+```
+
+## Universelle Rich-Text-Interpolation mit `t.rich()`
+
+Verknüpft Textabschnitte über XML-ähnliche Tags mit Frontend-Komponenten oder DOM-Knoten und vermeidet so die XSS-Sicherheitsrisiken von `dangerouslySetInnerHTML`:
+
+```ts
+const messages = {
+  notice:
+    "Bitte lesen Sie unsere <terms>Nutzungsbedingungen</terms> und akzeptieren Sie die <privacy>Datenschutzrichtlinie</privacy> vor dem Absenden.",
+} as const;
+
+const t = getTranslations("de-DE");
+
+// Direktes Zuordnen zu Komponenten in React / Vue
+const elements = t.rich("notice", {
+  terms: (children) => <a href="/terms" className="underline">{children}</a>,
+  privacy: (children) => <a href="/privacy" className="underline">{children}</a>,
+});
+```
+
+## HTML-String-Markup-Rendering mit `t.markup()`
+
+Wird verwendet, um Zeichenketten mit sicheren HTML-Tags zu generieren:
+
+```ts
+const html = t.markup("notice", {
+  terms: (c) => `<a href="/terms">${c}</a>`,
+  privacy: (c) => `<a href="/privacy">${c}</a>`,
+});
+```

@@ -1,0 +1,71 @@
+---
+title: "命名空間與作用域"
+description: "透過命名空間組織翻譯字典與資料擷取方式。"
+order: 3
+lang: "zh-Hant"
+---
+
+# 命名空間與作用域
+
+依功能模組或頁面組織翻譯詞條，可以避免鍵名衝突，並簡化呼叫路徑。
+
+## 局部作用域翻譯器
+
+在呼叫 `getTranslations` 時傳入第二個參數作為命名空間，返回限定在該命名空間作用域下的翻譯函式：
+
+```ts
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "即時監控指標",
+      refresh: "重新整理資料",
+    },
+  },
+} as const;
+
+// 綁定到多層巢狀命名空間
+const t = getTranslations("zh-Hant", "admin.dashboard");
+
+t("metrics"); // "即時監控指標"
+t("refresh"); // "重新整理資料"
+```
+
+## 全域扁平翻譯器
+
+若省略命名空間參數，`getTranslations` 返回根翻譯器，支援透過點分隔路徑存取巢狀鍵：
+
+```ts
+const t = getTranslations("zh-Hant");
+
+t("admin.dashboard.metrics"); // "即時監控指標"
+```
+
+## 擷取原始資料 `t.raw()`
+
+需要直接取得配置物件或陣列等原始結構時，可以使用 `t.raw()`：
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("zh-Hant");
+
+const endpoints = t.raw("config.endpoints");
+// 推導型別: readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## 檢查鍵是否存在 `t.has()`
+
+檢測指定鍵在目前語言或備援回退語言中是否存在，不會觸發缺少鍵的警告：
+
+```ts
+const t = getTranslations("zh-Hant", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

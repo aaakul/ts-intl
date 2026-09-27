@@ -1,0 +1,99 @@
+---
+title: "Benchmark e prestazioni"
+description: "Misura le dimensioni del trasferimento di rete degli asset i18n durante il pre-rendering SSG e l'idratazione lato client tra diverse librerie."
+order: 8
+lang: "it-IT"
+---
+
+import BenchmarkChart from "@/components/BenchmarkChart.astro";
+
+# Benchmark e prestazioni
+
+Questo benchmark riproduce l'architettura di test del [paraglide-js benchmark](https://github.com/opral/paraglide-js/tree/main/benchmark). **Simula le moderne applicazioni Web multilingua durante il pre-rendering iniziale e l'idratazione lato client, misurando le dimensioni complessive del trasferimento di rete (HTML + codice runtime JS + chunk di lingua) richieste dal client**.
+
+> **Contesto dello scenario**: Nelle MPA puramente statiche senza JavaScript (Zero-JS), il server distribuisce direttamente l'HTML localizzato senza alcun overhead di i18n lato client. Questo benchmark simula **applicazioni full-stack moderne con idratazione lato client, interazioni dinamiche (es. convalida dei moduli, notifiche lato client) e routing**, calcolando la quantità totale di asset statici scaricati per raggiungere lo stato interattivo.
+
+Librerie e configurazioni valutate:
+
+- **`ts-intl`** (Runtime leggero): Valutato sia in modalità `default` (bundle unico) sia in modalità `locale-splitting` (caricamento dinamico dei chunk per lingua).
+- **`paraglide`** (Approccio basato su compilatore): Valutato sia in modalità `default` (funzioni compilate raggruppate in bundle) sia in modalità `experimental-middleware-locale-splitting` (suddivisione tramite middleware di routing).
+- **`i18next`** (Runtime tradizionale): Valutato sia in modalità `default` (dizionari JSON inclusi in bundle) sia in modalità `http-backend` (recupero asincrono lato client con fetch).
+
+---
+
+## Confronto delle dimensioni di trasferimento
+
+Le misurazioni sono state acquisite utilizzando Playwright Headless Chromium, monitorando le dimensioni effettive del trasferimento di rete di tutte le risposte HTTP 2xx/3xx riuscite fino al raggiungimento di `networkidle`:
+
+<div class="my-6">
+  <BenchmarkChart lang="it-IT" />
+</div>
+
+---
+
+## Matrice dei dati di benchmark
+
+Carico di lavoro di base: 100 messaggi di traduzione renderizzati sulla pagina (il 20% contenente variabili di interpolazione dinamica).
+
+### Scenario 1: Applicazione su larga scala (10 lingue · Namespace da 500 messaggi)
+
+In questo scenario, il namespace contiene 500 messaggi, di cui 100 vengono referenziati e renderizzati:
+
+| Libreria e configurazione            | Dimensione totale trasferimento | vs. i18next Default | Caratteristiche tecniche                                                |
+| :----------------------------------- | :------------------------------ | :------------------ | :---------------------------------------------------------------------- |
+| **paraglide (middleware splitting)** | **36.3 KB**                     | -91.4%              | Compilato in funzioni JS; tree-shaking delle chiavi non usate; suddivisione della lingua attiva |
+| **ts-intl (locale-splitting)**       | **57.8 KB**                     | -86.2%              | Core di runtime di ~2 KB; trasferisce solo il JSON da 500 messaggi della lingua attiva |
+| **paraglide (default)**              | **76.6 KB**                     | -81.8%              | Tree-shaking delle chiavi non usate; raggruppa in bundle le funzioni compilate di 10 lingue |
+| **i18next (http-backend)**           | **188.7 KB**                    | -55.1%              | Recupera in modo asincrono il JSON della lingua attiva; include il runtime di i18next |
+| **ts-intl (default bundled)**        | **360.0 KB**                    | -14.4%              | Raggruppa in bundle i dizionari JSON completi da 500 messaggi per tutte le 10 lingue |
+| **i18next (default bundled)**        | **420.4 KB**                    | Baseline            | Raggruppa in bundle il JSON completo da 500 messaggi di 10 lingue + runtime i18next completo |
+
+### Scenario 2: Applicazione starter (5 lingue · Namespace da 100 messaggi)
+
+In questo scenario, il namespace contiene 100 messaggi e tutti i 100 vengono referenziati e renderizzati:
+
+| Libreria e configurazione            | Dimensione totale trasferimento | vs. i18next Default | Caratteristiche tecniche                                            |
+| :----------------------------------- | :------------------------------ | :------------------ | :------------------------------------------------------------------ |
+| **ts-intl (locale-splitting)**       | **29.7 KB**                     | -83.8%              | Core di runtime di ~2 KB; trasferisce solo il JSON da 100 messaggi della lingua attiva |
+| **paraglide (middleware splitting)** | **36.1 KB**                     | -80.3%              | Trasferisce solo le 100 funzioni compilate della lingua attiva      |
+| **paraglide (default)**              | **47.1 KB**                     | -74.3%              | Raggruppa in bundle 100 funzioni di messaggi compilate su 5 lingue  |
+| **ts-intl (default bundled)**        | **56.9 KB**                     | -69.0%              | Raggruppa in bundle i dizionari JSON da 100 messaggi per tutte le 5 lingue |
+| **i18next (http-backend)**           | **167.5 KB**                    | -8.6%               | Recupera in modo asincrono il JSON della lingua attiva; include il runtime di i18next |
+| **i18next (default bundled)**        | **183.3 KB**                    | Baseline            | Raggruppa in bundle il JSON da 100 messaggi per 5 lingue + runtime i18next completo |
+
+---
+
+## Analisi architetturale
+
+### 1. Tree-Shaking nelle soluzioni basate su compilatore
+
+- **Compromesso (Trade-off)**: `paraglide` compila ogni messaggio in una funzione JavaScript autonoma. I bundler (Rollup / esbuild) possono analizzare i riferimenti AST ed eliminare le funzioni non utilizzate in fase di build. Nello Scenario 1, i 400 messaggi inutilizzati vengono completamente rimossi dal bundle finale, ottenendo il payload più ridotto (36.3 KB).
+- **Considerazioni**: Richiede una fase dedicata di generazione del codice durante la build e non consente il caricamento dinamico a runtime di dizionari JSON arbitrari.
+
+### 2. Suddivisione in chunk (Chunk Splitting) nei runtime leggeri
+
+- **Zero generazione di codice**: `ts-intl` è una libreria TypeScript puramente a runtime. Utilizza direttamente oggetti TypeScript nativi o dizionari JSON senza ricorrere alla generazione di codice in fase di compilazione.
+- **Scalabilità flat su più lingue**: In modalità `locale-splitting`, i bundler suddividono ciascuna lingua in un chunk indipendente. Il browser scarica esclusivamente il chunk della lingua attiva. Di conseguenza, passare da 5 a più di 10 lingue non fa aumentare la dimensione del trasferimento iniziale per singola pagina (~30 KB a ~57 KB).
+- **Overhead a runtime minimo**: Il core di runtime di `ts-intl` occupa solo circa 2 KB minificato e delega la formattazione di numeri, date e plurali alle API Web standard native `Intl`, senza l'impiego di polyfill esterni.
+
+### 3. Origini dell'overhead nei runtime tradizionali
+
+- `i18next` include una gestione estesa della configurazione, event emitter, parser AST e formattatori personalizzati, che comportano un bundle di runtime di partenza più pesante.
+- Nelle configurazioni predefinite, l'importazione di tutti i dizionari di lingua in un unico entry point determina l'inclusione di tutte le lingue nel chunk iniziale scaricato dal client.
+
+---
+
+## Riprodurre il benchmark in locale
+
+La suite di benchmark si trova in [`apps/benchmark`](https://github.com/aaakul/ts-intl/tree/main/apps/benchmark). È possibile riprodurre queste misurazioni in locale:
+
+```bash
+# 1. Installa Chromium per headless (configurazione una tantum)
+pnpm --filter @aaakul/ts-intl-benchmark prebench
+
+# 2. Esegui l'intera matrice di benchmark (build SSG + misurazione con Playwright)
+pnpm --filter @aaakul/ts-intl-benchmark bench
+
+# 3. Avvia il server di anteprima locale (visualizzazione all'indirizzo http://localhost:3005)
+pnpm --filter @aaakul/ts-intl-benchmark preview
+```

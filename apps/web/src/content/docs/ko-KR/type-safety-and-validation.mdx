@@ -1,0 +1,105 @@
+---
+title: "타입 추론 및 유효성 검증"
+description: "컴파일 타임 엄격한 타입 검사, 매개변수 제약 조건 및 다국어 딕셔너리 구조 정합성 검증."
+order: 2
+lang: "ko-KR"
+---
+
+# 타입 추론 및 유효성 검증
+
+`ts-intl`은 TypeScript의 정교한 타입 시스템을 활용하여 존재하지 않는 키, 누락된 매개변수, 다국어 딕셔너리 간 구조 불일치를 컴파일 타임에 즉시 감지합니다.
+
+## 키 유효성 검사 및 자동 완성
+
+네임스페이스를 사용하든 점 표기법(Dot-path) 경로를 사용하든, IDE에서 키 자동 완성 및 엄격한 타입 검사가 완벽하게 지원됩니다:
+
+```ts
+const tCommon = getTranslations("ko-KR", "common");
+tCommon("title"); // 자동 완성: "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_typo");
+```
+
+점 표기법 글로벌 호출 형태:
+
+```ts
+const tRoot = getTranslations("ko-KR");
+tRoot("common.title"); // 자동 완성: "common.title" | "common.greeting" | ...
+```
+
+## 매개변수 제약 조건
+
+템플릿에 플레이스홀더가 포함되어 있다면 해당 매개변수 객체를 반드시 전달해야 하며, 플레이스홀더가 없다면 추가 인자 전달이 엄격히 금지됩니다:
+
+```ts
+const t = getTranslations("ko-KR", "common");
+
+// 플레이스홀더 없음: 매개변수 전달 금지
+t("title");
+
+// 플레이스홀더 포함: 매개변수 객체 전달 필수
+t("greeting", { name: "홍길동" });
+
+// @ts-expect-error 필수 매개변수 { name: string } 누락
+t("greeting");
+```
+
+## 명시적 매개변수 타입 표기
+
+TypeScript 딕셔너리에서는 `{name:type}` 문법을 통해 매개변수의 스칼라 타입을 명시적으로 지정할 수 있습니다. 현재 `string`, `number`, `Date`가 지원됩니다:
+
+```ts
+export default {
+  status:
+    "사용자 {name: string}님이 {timestamp: Date}에 로그인했습니다. 총계: {total: number}",
+} as const;
+```
+
+TypeScript는 호출부에서 전달된 매개변수 타입을 정밀하게 검증합니다:
+
+```ts
+const t = getTranslations("ko-KR");
+
+t("status", {
+  name: "홍길동",
+  timestamp: new Date(),
+  total: 100,
+});
+
+// @ts-expect-error 'string' 형식은 'number' 형식에 할당할 수 없습니다.
+t("status", { name: "홍길동", timestamp: new Date(), total: "100" });
+```
+
+## 다국어 딕셔너리 구조 정합성 검증 (Schema Alignment)
+
+`defaultLanguage`에 설정된 기본 언어 딕셔너리를 기준 구조(Baseline)로 삼아, `messages`에 등록되는 다른 모든 언어의 구조가 일치해야 합니다:
+
+- 다른 언어에 특정 키가 누락된 경우 초기화 설정 위치에서 컴파일 에러가 발생합니다.
+- 다른 언어에 기준 언어에는 없는 추가 키가 포함된 경우 컴파일 에러가 발생합니다.
+- 플레이스홀더 변수명 또한 언어 간에 반드시 동일해야 합니다(예: 영문이 `{count}`인 경우, 한국어 및 일본어도 동일하게 `{count}`여야 함).
+
+```ts
+const koKR = {
+  welcome: "환영합니다, {user: string}님!",
+} as const;
+
+const enUS = {
+  // @ts-expect-error 'welcome' 키가 누락됨
+  farewell: "Goodbye",
+} as const;
+
+createI18n({
+  defaultLanguage: "ko-KR",
+  messages: { "ko-KR": koKR, "en-US": enUS },
+});
+```
+
+## 런타임 딕셔너리 검증
+
+개발 환경(비프로덕션 모드)에서는 `createI18n` 초기화 단계에서 다음과 같은 런타임 딕셔너리 유효성 검사가 수행됩니다:
+
+- 딕셔너리 키에 네임스페이스 예약 문자인 점(`.`)이 실수로 포함되었는지 감지합니다.
+- 구조적 차이나 불일치가 발견되면 `onError`를 통해 진단 경고를 출력합니다.
+
+프로덕션 빌드 시에는 이 검증 로직이 자동으로 비활성화되므로 런타임 오버헤드가 전혀 발생하지 않습니다.

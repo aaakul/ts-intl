@@ -1,0 +1,105 @@
+---
+title: "Inferenza dei tipi e convalida"
+description: "Controllo rigoroso dei tipi in fase di compilazione, vincoli sui parametri e convalida dell'allineamento della struttura dei dizionari multilingua."
+order: 2
+lang: "it-IT"
+---
+
+# Inferenza dei tipi e convalida
+
+`ts-intl` sfrutta il type system di TypeScript per verificare chiavi inesistenti, parametri mancanti e incoerenze strutturali nei dizionari tra lingue diverse.
+
+## Controllo delle chiavi e autocompletamento
+
+Sia con i namespace sia con i percorsi separati da punti, gli IDE supportano l'autocompletamento delle chiavi e il type checking statico:
+
+```ts
+const tCommon = getTranslations("it-IT", "common");
+tCommon("title"); // Autocompletamento: "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_misspelled");
+```
+
+Formato di invocazione globale tramite percorsi con punto:
+
+```ts
+const tRoot = getTranslations("it-IT");
+tRoot("common.title"); // Autocompletamento: "common.title" | "common.greeting" | ...
+```
+
+## Vincoli sui parametri
+
+Quando un template include segnaposto (placeholder), è necessario passare l'oggetto dei parametri corrispondente; se non contiene segnaposto, non è consentito passare argomenti aggiuntivi:
+
+```ts
+const t = getTranslations("it-IT", "common");
+
+// Senza segnaposto: parametri non consentiti
+t("title");
+
+// Con segnaposto: parametri obbligatori
+t("greeting", { name: "Alice" });
+
+// @ts-expect-error Parametro obbligatorio mancante { name: string }
+t("greeting");
+```
+
+## Annotazioni esplicite dei tipi di parametro
+
+Nei dizionari TypeScript, i tipi dei parametri scalari possono essere specificati esplicitamente con la sintassi `{name:type}`; attualmente sono supportati `string`, `number` e `Date`:
+
+```ts
+export default {
+  status:
+    "L'utente {name: string} ha effettuato l'accesso alle {timestamp: Date}. Totale: {total: number}",
+} as const;
+```
+
+TypeScript convalida i tipi dei parametri passati dal chiamante:
+
+```ts
+const t = getTranslations("it-IT");
+
+t("status", {
+  name: "Alice",
+  timestamp: new Date(),
+  total: 42,
+});
+
+// @ts-expect-error Il tipo 'string' non è assegnabile al tipo 'number'
+t("status", { name: "Alice", timestamp: new Date(), total: "42" });
+```
+
+## Allineamento della struttura dei dizionari multilingua (Schema Alignment)
+
+Assumendo la struttura del dizionario della lingua impostata in `defaultLanguage` come base di riferimento, le altre lingue configurate in `messages` devono mantenersi perfettamente coerenti:
+
+- Se mancano chiavi in altre lingue, viene generato un errore di tipo a livello di configurazione dell'inizializzazione.
+- Se altre lingue contengono chiavi aggiuntive non presenti nella lingua di base, viene generato un errore di tipo.
+- I nomi delle variabili segnaposto devono rimanere identici (ad esempio, se in italiano è `{count}`, anche in inglese e giapponese deve essere `{count}`).
+
+```ts
+const itIT = {
+  welcome: "Benvenuto, {user: string}!",
+} as const;
+
+const enUS = {
+  // @ts-expect-error Chiave 'welcome' mancante
+  farewell: "Goodbye",
+} as const;
+
+createI18n({
+  defaultLanguage: "it-IT",
+  messages: { "it-IT": itIT, "en-US": enUS },
+});
+```
+
+## Convalida del dizionario a runtime
+
+Negli ambienti di sviluppo (modalità non di produzione), `createI18n` esegue la convalida dei dizionari durante la fase di inizializzazione:
+
+- Rileva se le chiavi del dizionario contengono inavvertitamente punti `.` (il punto è un simbolo riservato per le gerarchie dei namespace).
+- Emette avvisi diagnostici tramite `onError` in presenza di discrepanze strutturali.
+
+Questa convalida viene disattivata automaticamente nelle build di produzione, non comportando alcun overhead a runtime.

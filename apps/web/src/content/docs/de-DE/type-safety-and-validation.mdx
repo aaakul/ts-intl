@@ -1,0 +1,105 @@
+---
+title: "Typinferenz & Validierung"
+description: "Strikte Typprüfung zur Kompilierzeit, Parameterbeschränkungen und Validierung der Wörterbuchstrukturen über alle Sprachen hinweg."
+order: 2
+lang: "de-DE"
+---
+
+# Typinferenz & Validierung
+
+`ts-intl` nutzt das Typsystem von TypeScript, um nicht existierende Schlüssel, fehlende Parameter sowie Inkonsistenzen in der Struktur mehrsprachiger Wörterbücher zu erkennen.
+
+## Schlüsselprüfung & Autovervollständigung
+
+Unabhängig davon, ob Sie Namespaces oder punktseparierte Pfade verwenden, bieten moderne IDEs eine automatische Schlüsselvervollständigung und Typprüfung:
+
+```ts
+const tCommon = getTranslations("de-DE", "common");
+tCommon("title"); // Autovervollständigung: "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_misspelled");
+```
+
+Globales Aufrufformat mit Punkt-Notation (Dot-Path):
+
+```ts
+const tRoot = getTranslations("de-DE");
+tRoot("common.title"); // Autovervollständigung: "common.title" | "common.greeting" | ...
+```
+
+## Parameterbeschränkungen
+
+Wenn eine Vorlage Platzhalter enthält, muss das entsprechende Parameterobjekt übergeben werden. Enthält sie keine Platzhalter, ist die Übergabe zusätzlicher Argumente typseitig unzulässig:
+
+```ts
+const t = getTranslations("de-DE", "common");
+
+// Keine Platzhalter: Parameter sind unzulässig
+t("title");
+
+// Enthält Platzhalter: Parameter sind erforderlich
+t("greeting", { name: "Alice" });
+
+// @ts-expect-error Erforderlicher Parameter { name: string } fehlt
+t("greeting");
+```
+
+## Explizite Parametertyp-Annotationen
+
+In TypeScript-Wörterbüchern können skalare Parametertypen explizit über die Syntax `{name:type}` angegeben werden; derzeit werden `string`, `number` und `Date` unterstützt:
+
+```ts
+export default {
+  status:
+    "Benutzer {name: string} angemeldet um {timestamp: Date}. Gesamt: {total: number}",
+} as const;
+```
+
+TypeScript validiert die vom Aufrufer übergebenen Parametertypen:
+
+```ts
+const t = getTranslations("de-DE");
+
+t("status", {
+  name: "Alice",
+  timestamp: new Date(),
+  total: 42,
+});
+
+// @ts-expect-error Typ 'string' kann dem Typ 'number' nicht zugewiesen werden
+t("status", { name: "Alice", timestamp: new Date(), total: "42" });
+```
+
+## Struktureller Abgleich mehrsprachiger Wörterbücher (Schema-Alignment)
+
+Ausgehend vom in `defaultLanguage` konfigurierten Wörterbuch als Basisstruktur müssen alle weiteren in `messages` definierten Sprachen eine identische Struktur aufweisen:
+
+- Wenn in anderen Sprachen Schlüssel fehlen, wird bei der Initialisierungskonfiguration ein Typfehler ausgelöst.
+- Wenn andere Sprachen zusätzliche Schlüssel enthalten, die in der Basissprache nicht existieren, wird ein Typfehler ausgelöst.
+- Platzhalter-Variablennamen müssen konsistent bleiben (z. B. wenn Englisch `{count}` verwendet, müssen Deutsch und andere Sprachen ebenfalls `{count}` verwenden).
+
+```ts
+const deDE = {
+  welcome: "Willkommen, {user: string}!",
+} as const;
+
+const enUS = {
+  // @ts-expect-error Schlüssel 'welcome' fehlt
+  farewell: "Goodbye",
+} as const;
+
+createI18n({
+  defaultLanguage: "de-DE",
+  messages: { "de-DE": deDE, "en-US": enUS },
+});
+```
+
+## Wörterbuch-Validierung zur Laufzeit
+
+In Entwicklungsumgebungen (Nicht-Produktionsmodus) führt `createI18n` während der Initialisierungsphase eine Validierung der Wörterbücher durch:
+
+- Überprüft, ob Wörterbuchschlüssel versehentlich Punkte `.` enthalten (Punkte sind reservierte Zeichen für Namespace-Hierarchien).
+- Gibt bei strukturellen Diskrepanzen diagnostische Warnungen über den `onError`-Handler aus.
+
+Diese Validierung wird bei Produktions-Builds automatisch deaktiviert und verursacht daher keinen zusätzlichen Laufzeit-Overhead.

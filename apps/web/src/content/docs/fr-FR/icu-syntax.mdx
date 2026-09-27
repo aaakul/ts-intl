@@ -1,0 +1,111 @@
+---
+title: "Syntaxe ICU et rendu de texte enrichi"
+description: "Règles de pluriel, ordinaux, branches conditionnelles et syntaxe de rendu des composants de texte enrichi."
+order: 4
+lang: "fr-FR"
+---
+
+# Syntaxe ICU et rendu de texte enrichi
+
+`ts-intl` prend en charge la syntaxe standard ICU MessageFormat 1.x.
+
+## Prise en charge des pluriels (Pluralisation)
+
+### Objets de pluriel structurés
+
+Prend en charge les formats d'objets imbriqués conformes aux catégories de pluriel standard du CLDR (`zero`, `one`, `two`, `few`, `many`, `other`) :
+
+```ts
+const messages = {
+  cart: {
+    zero: "Votre panier est vide",
+    one: "1 article dans votre panier",
+    other: "{count} articles dans votre panier",
+  },
+} as const;
+
+const t = getTranslations("fr-FR");
+
+t("cart", { count: 0 }); // "Votre panier est vide"
+t("cart", { count: 1 }); // "1 article dans votre panier"
+t("cart", { count: 8 }); // "8 articles dans votre panier"
+```
+
+> **Remarque** : Selon la spécification CLDR, le français utilise principalement les catégories `one` (qui inclut également 0 dans les règles CLDR françaises traditionnelles) et `other` (`ts-intl` fournit en plus une prise en charge intégrée de `zero` lorsque `count === 0`). Si vous souhaitez un libellé différencié pour des nombres précis, nous vous recommandons d'utiliser la syntaxe ICU `plural` en ligne ci-dessous (comme `=0`).
+
+### Syntaxe ICU `plural` en ligne
+
+```ts
+const messages = {
+  inbox:
+    "Vous avez {count, plural, =0 {aucun message non lu} one {# message} other {# messages}}.",
+} as const;
+
+const t = getTranslations("fr-FR");
+
+t("inbox", { count: 0 }); // "Vous avez aucun message non lu."
+t("inbox", { count: 1 }); // "Vous avez 1 message."
+t("inbox", { count: 12 }); // "Vous avez 12 messages."
+```
+
+## Formatage des ordinaux (`selectordinal`)
+
+Utilisé pour gérer les expressions ordinales (la correspondance exacte `=` a la priorité sur les règles de catégorie) :
+
+```ts
+const messages = {
+  podium:
+    "Vous avez terminé {rank, selectordinal, =1 {1er} =2 {2e} =3 {3e} other {#e}} !",
+} as const;
+
+const t = getTranslations("fr-FR");
+
+t("podium", { rank: 1 }); // "Vous avez terminé 1er !"
+t("podium", { rank: 4 }); // "Vous avez terminé 4e !"
+```
+
+## Sélection de branches conditionnelles (`select`)
+
+Sélectionne différents textes en fonction d'énumérations d'état ou de valeurs de catégorie :
+
+```ts
+const messages = {
+  roleBadge:
+    "{role, select, admin {Administrateur} moderator {Modérateur} other {Membre}}",
+} as const;
+
+const t = getTranslations("fr-FR");
+
+t("roleBadge", { role: "admin" }); // "Administrateur"
+t("roleBadge", { role: "guest" }); // "Membre"
+```
+
+## Interpolation de texte enrichi universelle `t.rich()`
+
+Associe des fragments de texte à des composants front-end ou à des nœuds du DOM via des balises de type XML, éliminant ainsi les risques de failles XSS liés à l'usage de `dangerouslySetInnerHTML` :
+
+```ts
+const messages = {
+  notice:
+    "Veuillez consulter nos <terms>Conditions d'utilisation</terms> et accepter la <privacy>Politique de confidentialité</privacy> avant de soumettre.",
+} as const;
+
+const t = getTranslations("fr-FR");
+
+// Association directe à des composants dans React / Vue
+const elements = t.rich("notice", {
+  terms: (children) => <a href="/terms" className="underline">{children}</a>,
+  privacy: (children) => <a href="/privacy" className="underline">{children}</a>,
+});
+```
+
+## Rendu de balises HTML en chaîne avec `t.markup()`
+
+Utilisé pour générer des chaînes contenant des balises HTML sécurisées :
+
+```ts
+const html = t.markup("notice", {
+  terms: (c) => `<a href="/terms">${c}</a>`,
+  privacy: (c) => `<a href="/privacy">${c}</a>`,
+});
+```

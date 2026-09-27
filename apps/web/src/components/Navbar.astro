@@ -1,13 +1,9 @@
 ---
 import ThemeToggle from "./ThemeToggle.astro";
+import LanguageSelector from "./LanguageSelector.astro";
 import Icon from "./Icon.astro";
 import { SITE_CONFIG } from "@/config/site";
-import {
-  getTranslations,
-  languageLabels,
-  type SupportedLanguage,
-  languages,
-} from "@/i18n";
+import { getTranslations, type SupportedLanguage } from "@/i18n";
 
 interface Props {
   lang: SupportedLanguage;
@@ -17,14 +13,6 @@ interface Props {
 
 const { lang, currentSlug = "", isDocsPage = false } = Astro.props;
 const t = getTranslations(lang, "nav");
-
-// Build URL for target language while preserving the current route
-function getLanguageUrl(targetLang: SupportedLanguage) {
-  if (isDocsPage) {
-    return `/${targetLang}/docs/${currentSlug || "overview-and-installation"}`;
-  }
-  return `/${targetLang}`;
-}
 ---
 
 <header
@@ -71,45 +59,11 @@ function getLanguageUrl(targetLang: SupportedLanguage) {
       </div>
 
       <!-- Language Selector -->
-      <div class="relative" id="lang-dropdown">
-        <button
-          type="button"
-          id="lang-dropdown-btn"
-          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
-          aria-label={t("switchLanguage")}
-          aria-haspopup="true"
-          aria-expanded="false"
-        >
-          <Icon name="globe" class="w-3.5 h-3.5 text-neutral-500" />
-          <span class="hidden sm:inline">{languageLabels[lang]}</span>
-          <span class="sm:hidden uppercase">{lang.split("-")[0]}</span>
-          <Icon name="chevron-down" class="w-3 h-3 text-neutral-400" />
-        </button>
-
-        <div
-          id="lang-dropdown-menu"
-          role="menu"
-          aria-labelledby="lang-dropdown-btn"
-          class="absolute right-0 mt-1 w-32 py-1 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-md hidden z-50"
-        >
-          {
-            languages.map((l) => (
-              <a
-                href={getLanguageUrl(l)}
-                role="menuitem"
-                aria-current={l === lang ? "true" : undefined}
-                class={`block px-3 py-1.5 text-xs text-left transition-colors ${
-                  l === lang
-                    ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-950 dark:text-white font-medium"
-                    : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:text-neutral-900 dark:hover:text-neutral-200"
-                }`}
-              >
-                {languageLabels[l]}
-              </a>
-            ))
-          }
-        </div>
-      </div>
+      <LanguageSelector
+        lang={lang}
+        currentSlug={currentSlug}
+        isDocsPage={isDocsPage}
+      />
 
       <!-- Theme Switcher -->
       <ThemeToggle label={t("themeToggle")} />
@@ -139,57 +93,3 @@ function getLanguageUrl(targetLang: SupportedLanguage) {
     </div>
   </div>
 </header>
-
-<script is:inline>
-  function setupLangDropdown() {
-    const btn = document.getElementById("lang-dropdown-btn");
-    const menu = document.getElementById("lang-dropdown-menu");
-    if (!btn || !menu) return;
-
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const isExpanded = btn.getAttribute("aria-expanded") === "true";
-      if (isExpanded) {
-        menu.classList.add("hidden");
-        btn.setAttribute("aria-expanded", "false");
-      } else {
-        menu.classList.remove("hidden");
-        btn.setAttribute("aria-expanded", "true");
-      }
-    };
-
-    if (!window.__langDropdownListenersAttached) {
-      window.__langDropdownListenersAttached = true;
-      document.addEventListener("click", (e) => {
-        const currentBtn = document.getElementById("lang-dropdown-btn");
-        const currentMenu = document.getElementById("lang-dropdown-menu");
-        if (
-          currentBtn &&
-          currentMenu &&
-          !currentBtn.contains(e.target) &&
-          !currentMenu.contains(e.target)
-        ) {
-          currentMenu.classList.add("hidden");
-          currentBtn.setAttribute("aria-expanded", "false");
-        }
-      });
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") {
-          const currentBtn = document.getElementById("lang-dropdown-btn");
-          const currentMenu = document.getElementById("lang-dropdown-menu");
-          if (
-            currentBtn &&
-            currentMenu &&
-            currentBtn.getAttribute("aria-expanded") === "true"
-          ) {
-            currentMenu.classList.add("hidden");
-            currentBtn.setAttribute("aria-expanded", "false");
-            currentBtn.focus();
-          }
-        }
-      });
-    }
-  }
-  setupLangDropdown();
-  document.addEventListener("astro:after-swap", setupLangDropdown);
-</script>

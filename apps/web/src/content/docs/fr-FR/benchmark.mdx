@@ -1,0 +1,99 @@
+---
+title: "Benchmark et performances"
+description: "Mesure la taille du transfert réseau des ressources i18n lors du pré-rendu SSG et de l'hydratation côté client entre différentes bibliothèques."
+order: 8
+lang: "fr-FR"
+---
+
+import BenchmarkChart from "@/components/BenchmarkChart.astro";
+
+# Benchmark et performances
+
+Ce benchmark reproduit l'architecture de test du [benchmark paraglide-js](https://github.com/opral/paraglide-js/tree/main/benchmark). Il **simule des applications Web multilingues modernes lors du pré-rendu initial et de l'hydratation côté client, en mesurant la taille totale du transfert réseau (HTML + JS d'exécution + chunks de langue) requise par le client**.
+
+> **Contexte du scénario** : Dans une architecture MPA statique pure sans JS (Zero-JS), le serveur délivre directement du HTML localisé sans aucun surcoût i18n côté client. Ce benchmark simule des **applications full-stack modernes avec hydratation côté client, interactions dynamiques (ex. validation de formulaires, notifications instantanées) et routage**, mesurant le total des ressources statiques téléchargées pour parvenir à un état interactif.
+
+Bibliothèques et configurations évaluées :
+
+- **`ts-intl`** (Runtime léger) : Évalué à la fois en mode `default` (regroupé) et `locale-splitting` (chargement dynamique de chunks).
+- **`paraglide`** (Approche basée sur un compilateur) : Évalué à la fois en mode `default` (fonctions compilées regroupées) et `experimental-middleware-locale-splitting` (découpage par middleware de routage).
+- **`i18next`** (Runtime traditionnel) : Évalué à la fois en mode `default` (dictionnaires JSON regroupés) et `http-backend` (récupération asynchrone côté client).
+
+---
+
+## Comparaison des tailles de transfert
+
+Les mesures ont été capturées à l'aide de Playwright Headless Chromium, en suivant l'ensemble des tailles de transfert réseau HTTP 2xx/3xx réussies jusqu'à l'état `networkidle` :
+
+<div class="my-6">
+  <BenchmarkChart lang="fr-FR" />
+</div>
+
+---
+
+## Matrice des données du benchmark
+
+Charge de travail de référence : 100 messages de traduction rendus sur la page (dont 20 % contenant des variables d'interpolation dynamiques).
+
+### Scénario 1 : Application à grande échelle (10 langues · Espace de noms de 500 messages)
+
+Dans ce scénario, l'espace de noms contient 500 messages, dont 100 sont référencés et rendus :
+
+| Bibliothèque & Configuration         | Taille totale de transfert | vs i18next Default | Caractéristiques techniques                                                                       |
+| :----------------------------------- | :------------------------- | :----------------- | :------------------------------------------------------------------------------------------------ |
+| **paraglide (middleware splitting)** | **36.3 KB**                | -91.4%             | Compilé en fonctions JS ; élimine les clés inutilisées (tree-shaking) ; découpe la langue active |
+| **ts-intl (locale-splitting)**       | **57.8 KB**                | -86.2%             | Cœur de runtime de ~2 KB ; transfère uniquement le JSON de 500 messages de la langue active       |
+| **paraglide (default)**              | **76.6 KB**                | -81.8%             | Élimine les clés inutilisées ; regroupe les fonctions compilées sur 10 langues                   |
+| **i18next (http-backend)**           | **188.7 KB**               | -55.1%             | Récupère le JSON de la langue active de manière asynchrone ; inclut le runtime i18next           |
+| **ts-intl (default bundled)**        | **360.0 KB**               | -14.4%             | Regroupe les dictionnaires JSON complets de 500 messages pour les 10 langues                      |
+| **i18next (default bundled)**        | **420.4 KB**               | Référence          | Regroupe les JSON complets de 500 messages sur 10 langues + runtime complet i18next               |
+
+### Scénario 2 : Application de démarrage (5 langues · Espace de noms de 100 messages)
+
+Dans ce scénario, l'espace de noms contient 100 messages, et les 100 messages sont tous référencés et rendus :
+
+| Bibliothèque & Configuration         | Taille totale de transfert | vs i18next Default | Caractéristiques techniques                                                                  |
+| :----------------------------------- | :------------------------- | :----------------- | :------------------------------------------------------------------------------------------- |
+| **ts-intl (locale-splitting)**       | **29.7 KB**                | -83.8%             | Cœur de runtime de ~2 KB ; transfère uniquement le JSON de 100 messages de la langue active |
+| **paraglide (middleware splitting)** | **36.1 KB**                | -80.3%             | Transfère uniquement les 100 fonctions de messages compilées de la langue active            |
+| **paraglide (default)**              | **47.1 KB**                | -74.3%             | Regroupe les 100 fonctions de messages compilées sur 5 langues                               |
+| **ts-intl (default bundled)**        | **56.9 KB**                | -69.0%             | Regroupe les dictionnaires JSON de 100 messages sur les 5 langues                            |
+| **i18next (http-backend)**           | **167.5 KB**               | -8.6%              | Récupère le JSON de la langue active de manière asynchrone ; inclut le runtime i18next       |
+| **i18next (default bundled)**        | **183.3 KB**               | Référence          | Regroupe les JSON de 100 messages sur 5 langues + runtime complet i18next                    |
+
+---
+
+## Analyse architecturale
+
+### 1. Le Tree-Shaking dans les solutions basées sur un compilateur
+
+- **Compromis** : `paraglide` compile chaque message sous la forme d'une fonction JavaScript distincte. Les bundlers (Rollup / esbuild) peuvent analyser les références de l'AST et éliminer les fonctions inutilisées lors du build. Dans le scénario 1, les 400 messages non utilisés sont totalement exclus du bundle, produisant la charge utile la plus faible (36.3 KB).
+- **Considération** : Nécessite une étape de build dédiée pour la génération de code et ne peut pas charger dynamiquement des dictionnaires JSON arbitraires au runtime.
+
+### 2. Découpage en blocs (Chunk Splitting) dans les bibliothèques légères à l'exécution
+
+- **Zéro génération de code** : `ts-intl` est une bibliothèque TypeScript purement exécutable au runtime. Elle consomme directement des objets TypeScript standards ou des dictionnaires JSON sans nécessiter d'étape de génération de code lors de la compilation.
+- **Mise à l'échelle linéaire par langue** : En mode `locale-splitting`, les bundlers divisent chaque langue dans un chunk séparé. Le navigateur télécharge uniquement le chunk de la langue active. Ainsi, passer de 5 à 10+ langues n'augmente pas la taille de transfert initiale pour une page donnée (~30 KB à ~57 KB).
+- **Surcoût d'exécution minimal** : Le cœur du runtime `ts-intl` ne pèse qu'environ 2 KB minifié et délègue le formatage des nombres, des dates et des pluriels aux API Web standard `Intl` natives, sans nécessiter de polyfills externes.
+
+### 3. Origines de la surcharge dans les runtimes traditionnels
+
+- `i18next` intègre une gestion complète de la configuration, des émetteurs d'événements, des parseurs d'AST et des formateurs personnalisés, ce qui produit un bundle de runtime de base plus volumineux.
+- Dans les configurations par défaut, l'importation de l'ensemble des dictionnaires de langues dans un point d'entrée unique entraîne l'inclusion de toutes les langues dans le chunk client initial.
+
+---
+
+## Reproduire le benchmark localement
+
+La suite de benchmark est disponible dans [`apps/benchmark`](https://github.com/aaakul/ts-intl/tree/main/apps/benchmark). Vous pouvez reproduire ces mesures localement :
+
+```bash
+# 1. Installer le shell Chromium (configuration unique)
+pnpm --filter @aaakul/ts-intl-benchmark prebench
+
+# 2. Exécuter la matrice complète du benchmark (build SSG + mesures Playwright)
+pnpm --filter @aaakul/ts-intl-benchmark bench
+
+# 3. Lancer le serveur de prévisualisation local (visualiser les résultats sur http://localhost:3005)
+pnpm --filter @aaakul/ts-intl-benchmark preview
+```

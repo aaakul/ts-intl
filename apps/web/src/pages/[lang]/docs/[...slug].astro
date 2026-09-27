@@ -1,41 +1,64 @@
 ---
 import { getCollection, render } from "astro:content";
 import DocsLayout from "@/layouts/DocsLayout.astro";
-import type { SupportedLanguage } from "@/i18n";
+import { languages, type SupportedLanguage } from "@/i18n";
+import { docChapters } from "@/lib/docs";
 
 export async function getStaticPaths() {
   const docs = await getCollection("docs");
-  return docs.map((entry) => {
-    // entry.id format: "en-US/overview-and-installation"
+  const enDocs = docs.filter((entry) => entry.data.lang === "en-US");
+
+  const existingDocs = new Map<string, (typeof docs)[number]>();
+  for (const entry of docs) {
     const cleanId = entry.id.replace(/\.mdx?$/, "");
     const [, ...slugParts] = cleanId.split("/");
     const slug = slugParts.join("/");
-    return {
-      params: {
-        lang: entry.data.lang,
-        slug,
-      },
-      props: {
-        entry,
-      },
-    };
-  });
+    existingDocs.set(`${entry.data.lang}/${slug}`, entry);
+  }
+
+  const paths = [];
+  for (const lang of languages) {
+    for (const enEntry of enDocs) {
+      const cleanId = enEntry.id.replace(/\.mdx?$/, "");
+      const [, ...slugParts] = cleanId.split("/");
+      const slug = slugParts.join("/");
+      const docEntry = existingDocs.get(`${lang}/${slug}`);
+      const isFallback = !docEntry;
+      const entry = docEntry ?? enEntry;
+      paths.push({
+        params: {
+          lang,
+          slug,
+        },
+        props: {
+          entry,
+          isFallback,
+        },
+      });
+    }
+  }
+  return paths;
 }
 
-const { entry } = Astro.props;
+const { entry, isFallback = false } = Astro.props;
 const { lang, slug } = Astro.params as {
   lang: SupportedLanguage;
   slug: string;
 };
 const { Content, headings } = await render(entry);
+
+const chapter = docChapters.find((c) => c.slug === slug);
+const pageTitle = chapter?.title[lang] ?? entry.data.title;
+const pageDescription = chapter?.description[lang] ?? entry.data.description;
 ---
 
 <DocsLayout
-  title={`${entry.data.title}`}
-  description={entry.data.description}
+  title={pageTitle}
+  description={pageDescription}
   lang={lang}
   currentSlug={slug}
   headings={headings}
+  noindex={isFallback}
 >
   <Content />
 </DocsLayout>

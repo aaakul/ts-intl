@@ -1,0 +1,71 @@
+---
+title: "Namespace e ambito"
+description: "Organizzazione dei dizionari di traduzione tramite namespace e metodi di estrazione dei dati."
+order: 3
+lang: "it-IT"
+---
+
+# Namespace e ambito
+
+Organizzare le chiavi di traduzione per modulo funzionale o pagina evita collisioni di chiavi e semplifica i percorsi di chiamata.
+
+## Traduttori con ambito (Scoped Translators)
+
+Passando un namespace come secondo argomento alla chiamata di `getTranslations`, viene restituita una funzione di traduzione limitata all'ambito di quel namespace:
+
+```ts
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "Statistiche in tempo reale",
+      refresh: "Aggiorna dati",
+    },
+  },
+} as const;
+
+// Limita all'ambito del namespace annidato
+const t = getTranslations("it-IT", "admin.dashboard");
+
+t("metrics"); // "Statistiche in tempo reale"
+t("refresh"); // "Aggiorna dati"
+```
+
+## Traduttori globali flat (Global Flat Translators)
+
+Se il parametro del namespace viene omesso, `getTranslations` restituisce un traduttore radice che supporta l'accesso alle chiavi annidate tramite percorsi separati da punti:
+
+```ts
+const t = getTranslations("it-IT");
+
+t("admin.dashboard.metrics"); // "Statistiche in tempo reale"
+```
+
+## Estrazione dei dati grezzi con `t.raw()`
+
+Quando è necessario ottenere direttamente strutture grezze come oggetti di configurazione o array, è possibile utilizzare `t.raw()`:
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("it-IT");
+
+const endpoints = t.raw("config.endpoints");
+// Tipo inferito: readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## Verifica dell'esistenza delle chiavi con `t.has()`
+
+Verifica se una chiave specificata esiste nella lingua corrente o nella lingua di fallback senza generare avvisi di chiave mancante:
+
+```ts
+const t = getTranslations("it-IT", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

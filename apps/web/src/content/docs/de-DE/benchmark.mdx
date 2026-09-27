@@ -1,0 +1,99 @@
+---
+title: "Benchmark & Leistung"
+description: "Misst die Netzwerk-Übertragungsgröße von i18n-Ressourcen während des SSG-Pre-Renderings und der Client-Hydration im Bibliotheksvergleich."
+order: 8
+lang: "de-DE"
+---
+
+import BenchmarkChart from "@/components/BenchmarkChart.astro";
+
+# Benchmark & Leistung
+
+Dieser Benchmark reproduziert die Testarchitektur des [paraglide-js Benchmarks](https://github.com/opral/paraglide-js/tree/main/benchmark). Er **simuliert moderne mehrsprachige Webanwendungen beim initialen Pre-Rendering sowie der Client-Hydration und misst die tatsächliche Netzwerk-Übertragungsgröße (HTML + Laufzeit-JS + Sprach-Chunks), die vom Client geladen werden muss**.
+
+> **Szenariokontext**: In einer reinen Zero-JS-statischen MPA liefert der Server direkt lokalisiertes HTML ohne jeglichen clientseitigen i18n-Overhead aus. Dieser Benchmark simuliert **moderne Full-Stack-Anwendungen mit Client-Hydration, dynamischen Interaktionen (z. B. Formularvalidierung, clientseitige Benachrichtigungen) und Routing** und misst die gesamten statischen Assets, die geladen werden müssen, um einen interaktiven Zustand zu erreichen.
+
+Evaluierte Bibliotheken und Konfigurationen:
+
+- **`ts-intl`** (Leichtgewichtige Laufzeit): Getestet sowohl im Modus `default` (vollständig gebündelt) als auch im Modus `locale-splitting` (dynamisches Nachladen von Chunks).
+- **`paraglide`** (Compiler-basierter Ansatz): Getestet sowohl im Modus `default` (gebündelte kompilierte Funktionen) als auch im Modus `experimental-middleware-locale-splitting` (Routen-Middleware-Splitting).
+- **`i18next`** (Traditionelle Laufzeit): Getestet sowohl im Modus `default` (gebündelte JSON-Wörterbücher) als auch im Modus `http-backend` (asynchroner clientseitiger Abruf).
+
+---
+
+## Übertragungsgrößen im Vergleich
+
+Die Messungen wurden mit Playwright Headless Chromium erfasst, wobei alle erfolgreichen 2xx/3xx HTTP-Netzwerkübertragungsgrößen bis zum Status `networkidle` protokolliert wurden:
+
+<div class="my-6">
+  <BenchmarkChart lang="de-DE" />
+</div>
+
+---
+
+## Benchmark-Datenmatrix
+
+Baseline-Workload: 100 auf der Seite gerenderte Übersetzungsnachrichten (20 % davon enthalten dynamische Interpolationsvariablen).
+
+### Szenario 1: Skalierte Anwendung (10 Sprachen · Namespace mit 500 Nachrichten)
+
+In diesem Szenario enthält der Namespace 500 Nachrichten, wovon 100 tatsächlich referenziert und gerendert werden:
+
+| Bibliothek & Konfiguration           | Gesamte Übertragungsgröße | vs. i18next Default | Technische Eigenschaften                                                                    |
+| :----------------------------------- | :------------------------ | :------------------ | :------------------------------------------------------------------------------------------ |
+| **paraglide (middleware splitting)** | **36.3 KB**               | -91.4%              | In JS-Funktionen kompiliert; Tree-Shaking ungenutzter Schlüssel; teilt aktive Sprache auf     |
+| **ts-intl (locale-splitting)**       | **57.8 KB**               | -86.2%              | ~2 KB Laufzeitkern; überträgt nur das 500-Nachrichten-JSON der aktiven Sprache              |
+| **paraglide (default)**              | **76.6 KB**               | -81.8%              | Tree-Shaking ungenutzter Schlüssel; bündelt kompilierte Funktionen über 10 Sprachen         |
+| **i18next (http-backend)**           | **188.7 KB**              | -55.1%              | Lädt JSON der aktiven Sprache asynchron nach; beinhaltet i18next-Laufzeit                   |
+| **ts-intl (default bundled)**        | **360.0 KB**              | -14.4%              | Bündelt vollständige 500-Nachrichten-JSON-Wörterbücher aller 10 Sprachen                    |
+| **i18next (default bundled)**        | **420.4 KB**              | Baseline            | Bündelt vollständige 500-Nachrichten-JSONs über 10 Sprachen + vollständige i18next-Laufzeit |
+
+### Szenario 2: Starter-Anwendung (5 Sprachen · Namespace mit 100 Nachrichten)
+
+In diesem Szenario enthält der Namespace 100 Nachrichten, und alle 100 werden referenziert und gerendert:
+
+| Bibliothek & Konfiguration           | Gesamte Übertragungsgröße | vs. i18next Default | Technische Eigenschaften                                                      |
+| :----------------------------------- | :------------------------ | :------------------ | :---------------------------------------------------------------------------- |
+| **ts-intl (locale-splitting)**       | **29.7 KB**               | -83.8%              | ~2 KB Laufzeitkern; überträgt nur das 100-Nachrichten-JSON der aktiven Sprache |
+| **paraglide (middleware splitting)** | **36.1 KB**               | -80.3%              | Überträgt nur 100 kompilierte Nachrichtenfunktionen der aktiven Sprache       |
+| **paraglide (default)**              | **47.1 KB**               | -74.3%              | Bündelt 100 kompilierte Nachrichtenfunktionen über 5 Sprachen                  |
+| **ts-intl (default bundled)**        | **56.9 KB**               | -69.0%              | Bündelt 100-Nachrichten-JSON-Wörterbücher aller 5 Sprachen                    |
+| **i18next (http-backend)**           | **167.5 KB**              | -8.6%               | Lädt JSON der aktiven Sprache asynchron nach; beinhaltet i18next-Laufzeit     |
+| **i18next (default bundled)**        | **183.3 KB**              | Baseline            | Bündelt 100-Nachrichten-JSONs über 5 Sprachen + vollständige i18next-Laufzeit |
+
+---
+
+## Architekturanalyse
+
+### 1. Tree-Shaking in Compiler-basierten Lösungen
+
+- **Abwägung**: `paraglide` kompiliert jede Nachricht in eine eigenständige JavaScript-Funktion. Bundler (Rollup / esbuild) können AST-Referenzen analysieren und ungenutzte Funktionen zur Build-Zeit eliminieren. In Szenario 1 werden die 400 ungenutzten Nachrichten vollständig aus dem Bundle entfernt, was zur geringsten Payload führt (36.3 KB).
+- **Zu beachten**: Erfordert einen dedizierten Codegenerierungs-Build-Schritt und kann keine beliebigen Laufzeit-JSON-Wörterbücher dynamisch laden.
+
+### 2. Chunk-Splitting in leichtgewichtigen Laufzeitbibliotheken
+
+- **Keine Codegenerierung**: `ts-intl` ist eine reine TypeScript-Laufzeitbibliothek. Sie verarbeitet standardmäßige TypeScript-Objekte oder JSON-Wörterbücher direkt ohne Codegenerierung zur Kompilierzeit.
+- **Lineare Skalierung über Sprachen hinweg**: Im Modus `locale-splitting` unterteilen Bundler jede Sprache in einen separaten Chunk. Der Browser ruft ausschließlich den Chunk der aktiven Sprache ab. Daher führt eine Skalierung von 5 auf 10+ Sprachen zu keiner Erhöhung der initialen Übertragungsgröße einer Einzelseite (~30 KB bis ~57 KB).
+- **Minimaler Laufzeit-Overhead**: Der Laufzeitkern von `ts-intl` ist minifiziert ca. 2 KB groß und delegiert Zahlen-, Datums- und Pluralformatierungen an die nativen Web-Standard-`Intl`-APIs ohne externe Polyfills.
+
+### 3. Ursachen für Overhead in traditionellen Laufzeiten
+
+- `i18next` umfasst ein umfangreiches Konfigurationsmanagement, Event-Emitter, AST-Parser und benutzerdefinierte Formatierer, was zu einem größeren Basis-Laufzeitbundle führt.
+- In Standardkonfigurationen führt das Importieren aller Sprachwörterbücher in einen einzigen Einstiegspunkt dazu, dass sämtliche Sprachen in den initialen Client-Chunk gepackt werden.
+
+---
+
+## Lokales Reproduzieren des Benchmarks
+
+Die Benchmark-Suite befindet sich in [`apps/benchmark`](https://github.com/aaakul/ts-intl/tree/main/apps/benchmark). Sie können diese Messungen lokal reproduzieren:
+
+```bash
+# 1. Chromium-Shell installieren (einmalige Einrichtung)
+pnpm --filter @aaakul/ts-intl-benchmark prebench
+
+# 2. Vollständige Benchmark-Matrix ausführen (SSG-Build + Playwright-Messung)
+pnpm --filter @aaakul/ts-intl-benchmark bench
+
+# 3. Lokalen Vorschauserver starten (Visualisierung unter http://localhost:3005 anzeigen)
+pnpm --filter @aaakul/ts-intl-benchmark preview
+```

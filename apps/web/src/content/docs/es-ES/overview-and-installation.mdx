@@ -1,0 +1,188 @@
+---
+title: "Descripción general e instalación"
+description: "Introducción a ts-intl, principios de diseño fundamentales e instrucciones de configuración."
+order: 1
+lang: "es-ES"
+---
+
+# Descripción general e instalación
+
+`ts-intl` es una biblioteca de internacionalización (i18n) sin dependencias, independiente del framework y con estricta seguridad de tipos.
+
+Ofrece un diseño de API similar al de `next-intl`, pero sin depender de Next.js ni de un framework de interfaz de usuario específico, resultando ideal para el desarrollo moderno con TypeScript.
+
+## Principios de diseño
+
+- **Cero dependencias**: Cero dependencias en tiempo de ejecución y sin pasos de compilación para la generación de código.
+- **Independiente del framework**: Compatible con Astro, React, Vue, Svelte, Node.js, Bun y entornos de navegador.
+- **Seguridad de tipos estricta**: Las claves de traducción, los parámetros de interpolación dinámica, los espacios de nombres y la alineación estructural multilingüe cuentan con comprobación estática de tipos.
+
+## Instalación
+
+Instala `@aaakul/ts-intl` utilizando tu gestor de paquetes preferido:
+
+```bash
+# pnpm
+pnpm add @aaakul/ts-intl
+
+# npm
+npm install @aaakul/ts-intl
+
+# yarn
+yarn add @aaakul/ts-intl
+
+# bun
+bun add @aaakul/ts-intl
+```
+
+## Guía de inicio rápido
+
+### 1. Definir diccionarios de mensajes
+
+Declara los objetos de TypeScript utilizando `as const` para que el sistema de tipos pueda inferir los nombres de las claves y los tipos de los parámetros:
+
+```ts
+// messages/es-ES.ts
+export default {
+  common: {
+    title: "Panel de control del sistema",
+    greeting: "¡Hola, {name: string}!",
+    items: {
+      one: "1 elemento en total",
+      other: "{count} elementos en total",
+    },
+  },
+} as const;
+```
+
+```ts
+// messages/en-US.ts
+export default {
+  common: {
+    title: "System Dashboard",
+    greeting: "Hello, {name: string}!",
+    items: {
+      one: "1 item in total",
+      other: "{count} items in total",
+    },
+  },
+} as const;
+```
+
+### 2. Inicializar la instancia de i18n
+
+```ts
+// i18n.ts
+import { createI18n } from "@aaakul/ts-intl";
+import esES from "./messages/es-ES";
+import enUS from "./messages/en-US";
+
+export const {
+  getTranslations,
+  getFormatter,
+  isSupportedLanguage,
+  languages,
+  defaultLanguage,
+} = createI18n({
+  defaultLanguage: "es-ES",
+  messages: {
+    "es-ES": esES,
+    "en-US": enUS,
+  },
+});
+
+export type Language = (typeof languages)[number];
+```
+
+### 3. Obtener e invocar funciones de traducción
+
+```ts
+import { getTranslations } from "./i18n";
+
+const t = getTranslations("es-ES", "common");
+
+// 1. Clave estática
+const title = t("title");
+// Tipo inferido: (key: "title") => string
+// Salida: "Panel de control del sistema"
+
+// 2. Interpolación con parámetros
+const greeting = t("greeting", { name: "Desarrollador" });
+// Tipo inferido: (key: "greeting", params: { name: string }) => string
+// Salida: "¡Hola, Desarrollador!"
+
+// 3. Manejo de reglas de plural
+const items = t("items", { count: 5 });
+// Tipo inferido: (key: "items", params: { count: number }) => string
+// Salida: "5 elementos en total"
+```
+
+## Formatos de diccionario
+
+### Definiciones estáticas en TypeScript (Recomendado)
+
+Define los diccionarios utilizando `as const` para habilitar la validación de claves en tiempo de compilación y la extracción automática de tipos de parámetros:
+
+```ts
+export default {
+  auth: {
+    login: "Iniciar sesión",
+    welcome: "¡Te damos la bienvenida, {username: string}!",
+  },
+} as const;
+```
+
+### Diccionarios en formato JSON
+
+_Nota_: El formato JSON también admite el autocompletado de claves y la corrección ortográfica; no obstante, al no ser compatible con `as const`, los parámetros variables de las plantillas se inferirán con tipos flexibles o amplios.
+
+```ts
+import esES from "./messages/es-ES.json";
+import enUS from "./messages/en-US.json";
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "es-ES",
+  messages: { "es-ES": esES, "en-US": enUS },
+});
+```
+
+### Importaciones dinámicas con `await import`
+
+En entornos modernos compatibles con Top-Level Await (como Astro, Vite, Node 22+, Bun, etc.), los archivos de diccionario pueden importarse dinámicamente mediante `await import(...)`:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const esES = (await import("./messages/es-ES.ts")).default;
+const enUS = (await import("./messages/en-US.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "es-ES",
+  messages: { "es-ES": esES, "en-US": enUS },
+});
+```
+
+#### División de código por idioma (Locale Code Splitting)
+
+En aplicaciones multilingües, definir un mapa de cargadores (loader map) permite a los empaquetadores dividir cada diccionario de idioma en su propio fragmento (chunk), cargando bajo demanda únicamente el idioma activo:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "es-ES": () => import("./messages/es-ES.ts"),
+  "en-US": () => import("./messages/en-US.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
+
+> **Seguridad de tipos**: Siempre que los archivos de diccionario exporten con `as const` o utilicen JSON, los diccionarios importados dinámicamente mediante `await import` conservan el autocompletado total de espacios de nombres, la comprobación literal de claves y la extracción de tipos de parámetros (`{param: type}`).

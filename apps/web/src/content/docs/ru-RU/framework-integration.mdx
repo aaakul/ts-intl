@@ -1,0 +1,29 @@
+---
+title: "Обработка ошибок и резервные варианты"
+description: "Настройка обработки ошибок и резервных вариантов."
+order: 6
+lang: "ru-RU"
+---
+
+# Обработка ошибок и резервные варианты
+
+Настройка функций обратного вызова для обработки ошибок и стратегий резервного замещения (fallback) отсутствующих сообщений при инициализации:
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "ru-RU",
+  messages: { "ru-RU": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] Отсутствует ключ перевода "${error.key}" (язык: ${error.lang})`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[Отсутствует перевод: ${key}]`;
+  },
+});
+```

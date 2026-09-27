@@ -1,0 +1,107 @@
+---
+title: "ICU 語法與富文字渲染"
+description: "複數規則、序數詞、條件分支與富文字元件渲染語法。"
+order: 4
+lang: "zh-Hant"
+---
+
+# ICU 語法與富文字渲染
+
+`ts-intl` 支援 ICU MessageFormat 1.x 標準語法。
+
+## 複數支援 (Pluralization)
+
+### 結構化複數物件
+
+支援遵循 CLDR 標準複數分類（`zero`、`one`、`two`、`few`、`many`、`other`）的巢狀物件形式：
+
+```ts
+const messages = {
+  cart: {
+    zero: "購物車為空",
+    other: "購物車內共有 {count} 件商品",
+  },
+} as const;
+
+const t = getTranslations("zh-Hant");
+
+t("cart", { count: 0 }); // "購物車為空"
+t("cart", { count: 1 }); // "購物車內共有 1 件商品"
+t("cart", { count: 8 }); // "購物車內共有 8 件商品"
+```
+
+> **說明**：在 CLDR 規範中，中文僅包含 `other` 複數類別（`ts-intl` 額外內建了 `count === 0` 時對 `zero` 的支援）。若需要針對特定數值（例如 1）展示差異化文案，建議使用下方的模板內嵌 ICU `plural` 語法（如 `=1`）。
+
+### 模板內嵌 ICU `plural` 語法
+
+```ts
+const messages = {
+  inbox: "{count, plural, =0 {沒有新郵件} other {你有 # 封未讀郵件}}。",
+} as const;
+
+const t = getTranslations("zh-Hant");
+
+t("inbox", { count: 0 }); // "沒有新郵件。"
+t("inbox", { count: 5 }); // "你有 5 封未讀郵件。"
+```
+
+## 序數詞格式化 (`selectordinal`)
+
+用於處理序數表達（精確比對 `=` 優先於分類規則）：
+
+```ts
+const messages = {
+  podium:
+    "你獲得了第{rank, selectordinal, =1 {一} =2 {二} =3 {三} other {#}}名！",
+} as const;
+
+const t = getTranslations("zh-Hant");
+
+t("podium", { rank: 1 }); // "你獲得了第一名！"
+t("podium", { rank: 5 }); // "你獲得了第5名！"
+```
+
+## 條件分支選擇 (`select`)
+
+基於狀態列舉或分類值比對不同的文案：
+
+```ts
+const messages = {
+  roleBadge:
+    "{role, select, admin {系統管理員} editor {編輯者} other {一般成員}}",
+} as const;
+
+const t = getTranslations("zh-Hant");
+
+t("roleBadge", { role: "admin" }); // "系統管理員"
+t("roleBadge", { role: "guest" }); // "一般成員"
+```
+
+## 通用富文字插值 `t.rich()`
+
+透過類 XML 標籤將文案對應到前端元件或 DOM 節點，避免使用 `dangerouslySetInnerHTML` 帶來的 XSS 風險：
+
+```ts
+const messages = {
+  notice: "請在送出前查閱<terms>服務條款</terms>並確認<privacy>隱私權政策</privacy>。",
+} as const;
+
+const t = getTranslations("zh-Hant");
+
+// 在 React / Vue 中直接對應元件
+const elements = t.rich("notice", {
+  terms: (children) => <a href="/terms" className="underline">{children}</a>,
+  privacy: (children) => <a href="/privacy" className="underline">{children}</a>,
+});
+```
+
+## HTML 字串標記渲染 `t.markup()`
+
+用於生成包含安全 HTML 標籤的字串：
+
+```ts
+const html = t.markup("notice", {
+  terms: (c) => `<a href="/terms">${c}</a>`,
+  privacy: (c) => `<a href="/privacy">${c}</a>`,
+});
+```

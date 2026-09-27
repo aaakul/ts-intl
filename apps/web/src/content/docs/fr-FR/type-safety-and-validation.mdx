@@ -1,0 +1,105 @@
+---
+title: "Inférence de types et validation"
+description: "Vérification stricte des types à la compilation, contraintes sur les paramètres et validation de l'alignement structurel des dictionnaires multilingues."
+order: 2
+lang: "fr-FR"
+---
+
+# Inférence de types et validation
+
+`ts-intl` tire parti du système de types de TypeScript pour détecter les clés inexistantes, les paramètres manquants ainsi que les incohérences de structure entre dictionnaires multilingues.
+
+## Vérification des clés et autocomplétion
+
+Que vous utilisiez des espaces de noms ou des chemins séparés par des points, les IDE prennent en charge l'autocomplétion des clés et la vérification des types :
+
+```ts
+const tCommon = getTranslations("fr-FR", "common");
+tCommon("title"); // Autocomplétion : "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_misspelled");
+```
+
+Format d'appel global par chemin avec notation pointée :
+
+```ts
+const tRoot = getTranslations("fr-FR");
+tRoot("common.title"); // Autocomplétion : "common.title" | "common.greeting" | ...
+```
+
+## Contraintes sur les paramètres
+
+Lorsqu'un modèle contient des variables de substitution (placeholders), l'objet de paramètres correspondant doit impérativement être fourni ; lorsqu'il n'en contient aucun, le passage d'arguments supplémentaires est interdit par le compilateur :
+
+```ts
+const t = getTranslations("fr-FR", "common");
+
+// Aucun placeholder : les paramètres sont interdits
+t("title");
+
+// Contient un placeholder : les paramètres sont obligatoires
+t("greeting", { name: "Alice" });
+
+// @ts-expect-error Paramètre requis { name: string } manquant
+t("greeting");
+```
+
+## Annotations explicites des types de paramètres
+
+Dans les dictionnaires TypeScript, les types scalaires des paramètres peuvent être explicitement spécifiés à l'aide de la syntaxe `{name:type}` ; `string`, `number` et `Date` sont actuellement pris en charge :
+
+```ts
+export default {
+  status:
+    "Utilisateur {name: string} connecté à {timestamp: Date}. Total : {total: number}",
+} as const;
+```
+
+TypeScript valide les types de paramètres transmis par l'appelant :
+
+```ts
+const t = getTranslations("fr-FR");
+
+t("status", {
+  name: "Alice",
+  timestamp: new Date(),
+  total: 42,
+});
+
+// @ts-expect-error Le type 'string' n'est pas assignable au type 'number'
+t("status", { name: "Alice", timestamp: new Date(), total: "42" });
+```
+
+## Alignement structurel des dictionnaires multilingues (Schema Alignment)
+
+En prenant le dictionnaire de la langue configurée dans `defaultLanguage` comme référence structurelle, toutes les autres langues déclarées dans `messages` doivent rester rigoureusement conformes :
+
+- Lorsque des clés sont manquantes dans d'autres langues, une erreur de type est émise dès la configuration de l'initialisation.
+- Lorsque d'autres langues contiennent des clés supplémentaires qui n'existent pas dans la langue de référence, une erreur de type est générée.
+- Les noms des variables de substitution doivent rester identiques (par exemple, si la langue de base utilise `{count}`, les autres langues doivent également utiliser `{count}`).
+
+```ts
+const frFR = {
+  welcome: "Bienvenue, {user: string} !",
+} as const;
+
+const enUS = {
+  // @ts-expect-error Clé 'welcome' manquante
+  farewell: "Goodbye",
+} as const;
+
+createI18n({
+  defaultLanguage: "fr-FR",
+  messages: { "fr-FR": frFR, "en-US": enUS },
+});
+```
+
+## Validation des dictionnaires à l'exécution
+
+En environnement de développement (mode non-production), `createI18n` effectue une validation des dictionnaires durant la phase d'initialisation :
+
+- Détecte si des clés de dictionnaire contiennent par inadvertance des points `.` (les points étant réservés pour la hiérarchie des espaces de noms).
+- Émet des avertissements de diagnostic via `onError` lorsque des écarts de structure sont constatés.
+
+Cette validation est automatiquement désactivée lors de la compilation pour la production, n'entraînant ainsi aucun surcoût au runtime.

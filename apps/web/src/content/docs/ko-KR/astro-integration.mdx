@@ -1,0 +1,195 @@
+---
+title: "Astro 통합"
+description: "ts-intl-astro를 사용하여 컴포넌트 간 Props 드릴링 없이 컨텍스트 및 미들웨어 기반의 Astro 국제화 기능을 제공합니다."
+order: 7
+lang: "ko-KR"
+---
+
+# Astro 통합 (ts-intl-astro)
+
+`ts-intl-astro`는 코어 라이브러리 `@aaakul/ts-intl`을 기반으로 구축된 Astro 전용 국제화 통합 패키지입니다. 비동기 컨텍스트 관리(`AsyncLocalStorage`)를 통해 현재 요청의 언어 상태를 관리하므로, 컴포넌트 트리 하위로 언어 매개변수를 일일이 전달하는 Props 드릴링(Prop Drilling)을 완전히 제거합니다.
+
+## 핵심 기능
+
+- **Props 드릴링 제거**: Node.js 및 최신 표준 런타임의 `AsyncLocalStorage`와 Astro 미들웨어 메커니즘을 기반으로, 컴포넌트 트리 어디서든 `useTranslations()`를 직접 호출하여 현재 요청 언어의 번역 함수를 즉시 가져올 수 있습니다.
+- **미들웨어 자동 주입**: `astro.config.mjs`에 통합 모듈을 등록하면 Astro 렌더링 파이프라인에 프리 미들웨어(Pre-middleware)가 자동으로 주입되어 활성 페이지의 로케일을 해석합니다. `context.currentLocale`, 라우트 파라미터(`[lang]`, `[locale]`), URL 경로 분석을 완벽하게 지원합니다.
+- **엄격한 타입 안전성**: `ts-intl`의 컴파일 타임 전체 타입 추론을 그대로 계승하여 네임스페이스 제약, 키 자동 완성, ICU 매개변수 유효성 검증, 다국어 딕셔너리 구조 정합성 검증을 제공합니다.
+
+## 설치
+
+Astro 프로젝트에 `ts-intl-astro` 및 관련 의존성을 설치합니다:
+
+```bash
+pnpm add ts-intl-astro
+# 또는
+npm install ts-intl-astro
+# 또는
+yarn add ts-intl-astro
+```
+
+## 빠른 설정
+
+### 1. i18n 인스턴스 초기화
+
+프로젝트의 `src/i18n/index.ts` 파일에서 번역 Hooks 및 인스턴스 설정을 생성하고 내보냅니다:
+
+```ts
+// src/i18n/index.ts
+import { createAstroI18n } from "ts-intl-astro";
+import koKR from "./messages/ko-KR";
+import enUS from "./messages/en-US";
+
+export const {
+  useTranslations,
+  useLocale,
+  useFormatter,
+  languages,
+  defaultLanguage,
+} = createAstroI18n({
+  defaultLanguage: "ko-KR",
+  messages: {
+    "ko-KR": koKR,
+    "en-US": enUS,
+  },
+});
+
+export type SupportedLanguage = (typeof languages)[number];
+```
+
+### 2. Astro 통합 등록
+
+프로젝트의 `astro.config.mjs` 파일에서 `tsIntl`을 가져와 등록합니다:
+
+```js
+// astro.config.mjs
+import { defineConfig } from "astro/config";
+import tsIntl from "ts-intl-astro";
+
+export default defineConfig({
+  integrations: [tsIntl()],
+});
+```
+
+이 통합 모듈은 Astro 빌드 및 런타임 단계에서 컨텍스트 미들웨어를 자동으로 등록합니다. 페이지가 요청을 처리하거나 정적 페이지를 생성할 때, 미들웨어가 라우트 로케일을 해석하고 활성 컨텍스트를 요청 스코프에 주입합니다.
+
+## 컴포넌트에서 사용하기
+
+컨텍스트 미들웨어 덕분에 하위 컴포넌트에서 `lang` prop을 따로 선언하거나 전달받을 필요가 없습니다:
+
+### 기본 사용법
+
+```astro
+---
+// src/components/Header.astro
+import { useTranslations, useLocale } from "@/i18n";
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<header class="flex items-center justify-between p-4">
+  <nav class="space-x-4">
+    <a href={`/${lang}`}>{t("home")}</a>
+    <a href={`/${lang}/docs`}>{t("docs")}</a>
+    <a href={`/${lang}/pricing`}>{t("pricing")}</a>
+  </nav>
+</header>
+```
+
+### 명시적 로케일 재정의 (Override)
+
+독립된 특정 컴포넌트에서 다른 언어로 강제 렌더링해야 하는 경우(예: 언어 선택 드롭다운의 미리보기 등), `{ locale }` 옵션을 전달하여 재정의할 수 있습니다:
+
+```astro
+---
+import { useTranslations } from "@/i18n";
+
+const tEn = useTranslations("hero", { locale: "en-US" });
+---
+
+<p>{tEn("title")}</p>
+```
+
+### 포매터 사용
+
+`useFormatter()`를 호출하여 현재 로케일 컨텍스트에 바인딩된 Web `Intl` 캐싱 포매터를 가져옵니다:
+
+```astro
+---
+import { useFormatter } from "@/i18n";
+
+const fmt = useFormatter();
+const formattedPrice = fmt.number(129000, { style: "currency", currency: "KRW" });
+const formattedDate = fmt.dateTime(new Date(), { dateStyle: "medium" });
+---
+
+<div>
+  <span>{formattedPrice}</span>
+  <time>{formattedDate}</time>
+</div>
+```
+
+## 라우트 세그먼트 구성 및 활용 (Route Segments)
+
+다국어 페이지 구조를 구성할 때는 `src/pages/[lang]/index.astro` 또는 `src/pages/[locale]/about.astro`와 같은 동적 라우트 세그먼트를 사용하는 것이 좋습니다.
+
+### 정적 사이트 생성 (SSG)
+
+정적 사이트 생성 모드에서는 내보낸 `languages` 배열을 활용하여 `getStaticPaths()`를 정의합니다:
+
+```astro
+---
+// src/pages/[lang]/index.astro
+import { languages, useTranslations, useLocale } from "@/i18n";
+
+export function getStaticPaths() {
+  return languages.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<nav>
+  <a href={`/${lang}`}>{t("home")}</a>
+  <a href={`/${lang}/docs`}>{t("docs")}</a>
+</nav>
+```
+
+### 라우트 세그먼트 해석 메커니즘
+
+- **기본 라우트 세그먼트 파라미터명**: 미들웨어는 동적 라우트 파라미터인 `context.params.lang`과 `context.params.locale`을 기본적으로 자동 감지합니다. 디렉터리 이름이 `[lang]` 또는 `[locale]`이기만 하면 별도 설정 없이 바로 인식됩니다.
+- **무매개변수 컨텍스트 주입**: 미들웨어가 페이지 및 하위 컴포넌트 렌더링 전에 라우트 세그먼트로부터 언어를 추출하여 비동기 스코프에 저장합니다. 깊은 계층의 하위 컴포넌트에서도 `useTranslations()`나 `useLocale()`을 직접 호출하기만 하면 해당 언어를 즉시 사용할 수 있으므로 Props 드릴링이 완전히 사라집니다.
+- **사용자 정의 라우트 파라미터명**: 라우트 경로에 다른 파라미터명을 사용하는 경우(예: `src/pages/[localeCode]/...`), `createAstroI18n`의 `paramNames` 옵션으로 설정할 수 있습니다:
+
+```ts
+export const {
+  /* ... */
+} = createAstroI18n({
+  defaultLanguage: "ko-KR",
+  paramNames: ["localeCode", "lang", "locale"],
+  messages: {
+    /* ... */
+  },
+});
+```
+
+## 언어 해석 우선순위 전략
+
+`ts-intl-astro`는 다음 우선순위에 따라 요청 언어를 순차적으로 해석합니다:
+
+1. **Astro 내장 `context.currentLocale`** (Astro 기본 i18n 라우팅)
+2. **라우트 동적 파라미터** (기본적으로 `context.params.lang`, `context.params.locale` 감지, `paramNames`로 확장 가능)
+3. **URL 경로 접두사 분석** (예: `/ko-KR/...` 첫 번째 경로 세그먼트 추출)
+4. **기본 언어 폴백** (설정에 지정된 `defaultLanguage`)
+
+## API 레퍼런스
+
+| API                           | 타입              | 설명                                                                                |
+| :---------------------------- | :---------------- | :---------------------------------------------------------------------------------- |
+| `createAstroI18n(config)`     | `Function`        | Astro 전용 i18n 인스턴스 초기화 (`defaultLanguage`, `messages`, `paramNames` 구성)  |
+| `useTranslations(ns?, opts?)` | `Function`        | 현재 렌더링 컨텍스트에 바인딩된 번역 함수 `t` 반환                                 |
+| `useLocale()`                 | `() => string`    | 현재 렌더링 컨텍스트의 활성 언어 코드 반환                                          |
+| `useFormatter(opts?)`         | `() => Formatter` | 현재 언어 컨텍스트에 바인딩된 캐싱 Web `Intl` 포매터 반환                           |

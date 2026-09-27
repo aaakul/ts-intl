@@ -1,0 +1,107 @@
+---
+title: "ICU 문법 및 서식 있는 텍스트 렌더링"
+description: "복수형 규칙, 서수, 조건부 분기 및 서식 있는 텍스트 컴포넌트 렌더링 문법."
+order: 4
+lang: "ko-KR"
+---
+
+# ICU 문법 및 서식 있는 텍스트 렌더링
+
+`ts-intl`은 표준 ICU MessageFormat 1.x 문법을 완벽하게 지원합니다.
+
+## 복수형 지원 (Pluralization)
+
+### 구조화된 복수형 객체
+
+CLDR 표준 복수형 카테고리(`zero`, `one`, `two`, `few`, `many`, `other`)를 따르는 중첩 객체 형태를 지원합니다:
+
+```ts
+const messages = {
+  cart: {
+    zero: "장바구니가 비어 있습니다",
+    other: "장바구니에 총 {count}개의 상품이 있습니다",
+  },
+} as const;
+
+const t = getTranslations("ko-KR");
+
+t("cart", { count: 0 }); // "장바구니가 비어 있습니다"
+t("cart", { count: 1 }); // "장바구니에 총 1개의 상품이 있습니다"
+t("cart", { count: 8 }); // "장바구니에 총 8개의 상품이 있습니다"
+```
+
+> **참고**: CLDR 표준 명세에서 한국어는 기본적으로 `other` 복수 카테고리만 정의되어 있습니다(`ts-intl`은 `count === 0`일 때의 편의를 위해 `zero` 지원을 추가로 내장하고 있습니다). 특정 숫자(예: 1)에 대해 다른 문구를 표시해야 하는 경우, 아래의 인라인 ICU `plural` 문법(예: `=1`)을 사용하는 것을 권장합니다.
+
+### 인라인 ICU `plural` 문법
+
+```ts
+const messages = {
+  inbox: "{count, plural, =0 {새로운 메시지가 없습니다} other {읽지 않은 메시지가 #개 있습니다}}.",
+} as const;
+
+const t = getTranslations("ko-KR");
+
+t("inbox", { count: 0 }); // "새로운 메시지가 없습니다."
+t("inbox", { count: 5 }); // "읽지 않은 메시지가 5개 있습니다."
+```
+
+## 서수 포맷팅 (`selectordinal`)
+
+순번이나 등수 표현을 처리할 때 사용합니다(정확한 매칭 `=`이 일반 카테고리 규칙보다 우선 적용됨):
+
+```ts
+const messages = {
+  podium:
+    "{rank, selectordinal, =1 {1등} =2 {2등} =3 {3등} other {#등}}을 달성했습니다!",
+} as const;
+
+const t = getTranslations("ko-KR");
+
+t("podium", { rank: 1 }); // "1등을 달성했습니다!"
+t("podium", { rank: 5 }); // "5등을 달성했습니다!"
+```
+
+## 조건부 분기 선택 (`select`)
+
+상태 열거형(Enum)이나 카테고리 값에 따라 다른 문구를 매칭합니다:
+
+```ts
+const messages = {
+  roleBadge:
+    "{role, select, admin {시스템 관리자} editor {에디터} other {일반 회원}}",
+} as const;
+
+const t = getTranslations("ko-KR");
+
+t("roleBadge", { role: "admin" }); // "시스템 관리자"
+t("roleBadge", { role: "guest" }); // "일반 회원"
+```
+
+## 범용 서식 있는 텍스트 보간 `t.rich()`
+
+XML 스타일의 태그를 활용하여 메시지를 프론트엔드 컴포넌트나 DOM 노드에 매핑함으로써, `dangerouslySetInnerHTML`로 인한 XSS 취약점 위험을 원천 차단합니다:
+
+```ts
+const messages = {
+  notice: "제출하기 전에 <terms>이용약관</terms> 및 <privacy>개인정보 처리방침</privacy>을 확인해 주세요.",
+} as const;
+
+const t = getTranslations("ko-KR");
+
+// React / Vue 컴포넌트에 직접 매핑
+const elements = t.rich("notice", {
+  terms: (children) => <a href="/terms" className="underline">{children}</a>,
+  privacy: (children) => <a href="/privacy" className="underline">{children}</a>,
+});
+```
+
+## HTML 문자열 마크업 렌더링 `t.markup()`
+
+안전한 HTML 태그를 포함하는 문자열을 생성할 때 사용합니다:
+
+```ts
+const html = t.markup("notice", {
+  terms: (c) => `<a href="/terms">${c}</a>`,
+  privacy: (c) => `<a href="/privacy">${c}</a>`,
+});
+```

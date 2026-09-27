@@ -1,0 +1,29 @@
+---
+title: "오류 처리 및 폴백"
+description: "오류 처리 및 누락된 메시지 폴백 전략 구성."
+order: 6
+lang: "ko-KR"
+---
+
+# 오류 처리 및 폴백
+
+초기화 시점에 오류 콜백과 누락된 번역 문구에 대한 폴백 전략을 설정할 수 있습니다:
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "ko-KR",
+  messages: { "ko-KR": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] 누락된 번역 키 "${error.key}" (언어: ${error.lang})`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[미번역: ${key}]`;
+  },
+});
+```

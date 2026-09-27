@@ -1,0 +1,188 @@
+---
+title: "概述與安裝"
+description: "ts-intl 簡介、核心設計原則與安裝設定指南。"
+order: 1
+lang: "zh-Hant"
+---
+
+# 概述與安裝
+
+`ts-intl` 是一個零依賴、框架無關、嚴格型別安全的國際化（i18n）程式庫。
+
+它提供與 `next-intl` 類似的 API 設計，但不依賴 Next.js 或特定 UI 框架，適用於現代 TypeScript 開發。
+
+## 設計原則
+
+- **零依賴**：無執行時期依賴，無需建置階段的程式碼生成。
+- **框架無關**：支援 Astro、React、Vue、Svelte、Node.js、Bun 以及瀏覽器等執行環境。
+- **嚴格型別安全**：翻譯鍵、動態插值參數、命名空間以及多語言結構對齊均具備靜態型別檢查。
+
+## 安裝
+
+使用套件管理器安裝 `@aaakul/ts-intl`：
+
+```bash
+# pnpm
+pnpm add @aaakul/ts-intl
+
+# npm
+npm install @aaakul/ts-intl
+
+# yarn
+yarn add @aaakul/ts-intl
+
+# bun
+bun add @aaakul/ts-intl
+```
+
+## 快速上手
+
+### 1. 定義多語言字典
+
+使用 `as const` 斷言 TypeScript 物件，使型別系統能夠推導鍵名與參數型別：
+
+```ts
+// messages/zh-Hant.ts
+export default {
+  common: {
+    title: "系統儀表板",
+    greeting: "你好，{name: string}！",
+    items: {
+      one: "共 1 項資料",
+      other: "共 {count} 項資料",
+    },
+  },
+} as const;
+```
+
+```ts
+// messages/en-US.ts
+export default {
+  common: {
+    title: "System Dashboard",
+    greeting: "Hello, {name: string}!",
+    items: {
+      one: "1 item in total",
+      other: "{count} items in total",
+    },
+  },
+} as const;
+```
+
+### 2. 初始化 i18n 實例
+
+```ts
+// i18n.ts
+import { createI18n } from "@aaakul/ts-intl";
+import zhHant from "./messages/zh-Hant";
+import enUS from "./messages/en-US";
+
+export const {
+  getTranslations,
+  getFormatter,
+  isSupportedLanguage,
+  languages,
+  defaultLanguage,
+} = createI18n({
+  defaultLanguage: "zh-Hant",
+  messages: {
+    "zh-Hant": zhHant,
+    "en-US": enUS,
+  },
+});
+
+export type Language = (typeof languages)[number];
+```
+
+### 3. 取得翻譯函式並呼叫
+
+```ts
+import { getTranslations } from "./i18n";
+
+const t = getTranslations("zh-Hant", "common");
+
+// 1. 靜態鍵
+const title = t("title");
+// 推導型別: (key: "title") => string
+// 輸出: "系統儀表板"
+
+// 2. 帶參數插值
+const greeting = t("greeting", { name: "開發者" });
+// 推導型別: (key: "greeting", params: { name: string }) => string
+// 輸出: "你好，開發者！"
+
+// 3. 複數規則處理
+const items = t("items", { count: 5 });
+// 推導型別: (key: "items", params: { count: number }) => string
+// 輸出: "共 5 項資料"
+```
+
+## 詞典格式支援
+
+### TypeScript 靜態定義（推薦）
+
+透過 `as const` 定義詞典，支援編譯期鍵名驗證與參數型別擷取：
+
+```ts
+export default {
+  auth: {
+    login: "登入",
+    welcome: "歡迎回來，{username: string}！",
+  },
+} as const;
+```
+
+### JSON 詞典格式
+
+_說明_：JSON 格式同樣支援鍵名自動補全與拼字檢查；由於 JSON 本身不支援 `as const`，模板變數參數將推導為寬鬆型別。
+
+```ts
+import zhHant from "./messages/zh-Hant.json";
+import enUS from "./messages/en-US.json";
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "zh-Hant",
+  messages: { "zh-Hant": zhHant, "en-US": enUS },
+});
+```
+
+### 動態隨需匯入（`await import`）
+
+在支援 Top-Level Await 的現代執行環境（如 Astro、Vite、Node 22+、Bun 等）中，可使用 `await import(...)` 動態匯入詞典檔案：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const zhHant = (await import("./messages/zh-Hant.ts")).default;
+const enUS = (await import("./messages/en-US.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "zh-Hant",
+  messages: { "zh-Hant": zhHant, "en-US": enUS },
+});
+```
+
+#### 依語言隨需分割（Locale Splitting）
+
+在多語言專案中，為避免將所有語言的詞典打包至單一客戶端產出物中，可結合載入器對應表（Loader Map）實現隨需程式碼分割與動態載入：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "zh-Hant": () => import("./messages/zh-Hant.ts"),
+  "en-US": () => import("./messages/en-US.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
+
+> **型別安全性**：只要詞典檔案使用 `export default { ... } as const;` 或 JSON 格式匯出，透過 `await import` 動態匯入依然完整保留所有層級的命名空間、鍵名自動補全以及參數型別驗證（`{param: type}`）。

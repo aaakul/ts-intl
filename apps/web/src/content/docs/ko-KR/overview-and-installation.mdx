@@ -1,0 +1,188 @@
+---
+title: "개요 및 설치"
+description: "ts-intl 소개, 핵심 설계 원칙 및 설치 설정 가이드."
+order: 1
+lang: "ko-KR"
+---
+
+# 개요 및 설치
+
+`ts-intl`은 런타임 의존성이 없고, 특정 프레임워크에 종속되지 않으며, 엄격한 타입 안전성을 제공하는 국제화(i18n) 라이브러리입니다.
+
+`next-intl`과 유사한 직관적인 API 설계를 제공하면서도 Next.js나 특정 UI 프레임워크에 의존하지 않아, 모던 TypeScript 개발 환경 어디서나 유연하게 사용할 수 있습니다.
+
+## 핵심 설계 원칙
+
+- **런타임 의존성 제로**: 런타임 외부 의존성이 전혀 없으며, 빌드 단계의 코드 생성 과정도 필요하지 않습니다.
+- **프레임워크 무관**: Astro, React, Vue, Svelte, Node.js, Bun 및 브라우저 환경을 모두 지원합니다.
+- **엄격한 타입 안전성**: 번역 키, 동적 보간 매개변수, 네임스페이스 및 다국어 딕셔너리 간 구조 정합성에 대해 완전한 정적 타입 검사를 제공합니다.
+
+## 설치
+
+선호하는 패키지 매니저를 사용하여 `@aaakul/ts-intl`을 설치합니다:
+
+```bash
+# pnpm
+pnpm add @aaakul/ts-intl
+
+# npm
+npm install @aaakul/ts-intl
+
+# yarn
+yarn add @aaakul/ts-intl
+
+# bun
+bun add @aaakul/ts-intl
+```
+
+## 빠른 시작
+
+### 1. 다국어 메시지 딕셔너리 정의
+
+TypeScript 객체에 `as const` 단언을 적용하여 타입 시스템이 키 이름과 매개변수 타입을 자동으로 추론할 수 있도록 합니다:
+
+```ts
+// messages/ko-KR.ts
+export default {
+  common: {
+    title: "시스템 대시보드",
+    greeting: "안녕하세요, {name: string}님!",
+    items: {
+      one: "총 1개의 항목",
+      other: "총 {count}개의 항목",
+    },
+  },
+} as const;
+```
+
+```ts
+// messages/en-US.ts
+export default {
+  common: {
+    title: "System Dashboard",
+    greeting: "Hello, {name: string}!",
+    items: {
+      one: "1 item in total",
+      other: "{count} items in total",
+    },
+  },
+} as const;
+```
+
+### 2. i18n 인스턴스 초기화
+
+```ts
+// i18n.ts
+import { createI18n } from "@aaakul/ts-intl";
+import koKR from "./messages/ko-KR";
+import enUS from "./messages/en-US";
+
+export const {
+  getTranslations,
+  getFormatter,
+  isSupportedLanguage,
+  languages,
+  defaultLanguage,
+} = createI18n({
+  defaultLanguage: "ko-KR",
+  messages: {
+    "ko-KR": koKR,
+    "en-US": enUS,
+  },
+});
+
+export type Language = (typeof languages)[number];
+```
+
+### 3. 번역 함수 가져오기 및 호출
+
+```ts
+import { getTranslations } from "./i18n";
+
+const t = getTranslations("ko-KR", "common");
+
+// 1. 정적 키
+const title = t("title");
+// 추론된 타입: (key: "title") => string
+// 출력: "시스템 대시보드"
+
+// 2. 매개변수 보간
+const greeting = t("greeting", { name: "개발자" });
+// 추론된 타입: (key: "greeting", params: { name: string }) => string
+// 출력: "안녕하세요, 개발자님!"
+
+// 3. 복수형 규칙 처리
+const items = t("items", { count: 5 });
+// 추론된 타입: (key: "items", params: { count: number }) => string
+// 출력: "총 5개의 항목"
+```
+
+## 지원하는 딕셔너리 포맷
+
+### TypeScript 정적 정의 (권장)
+
+`as const`를 사용하여 딕셔너리를 정의하면 컴파일 타임 키 유효성 검사 및 매개변수 타입 추출을 완벽하게 지원합니다:
+
+```ts
+export default {
+  auth: {
+    login: "로그인",
+    welcome: "다시 오신 것을 환영합니다, {username: string}님!",
+  },
+} as const;
+```
+
+### JSON 딕셔너리 포맷
+
+_참고_: JSON 포맷 역시 키 자동 완성 및 오타 검사를 지원합니다. 단, JSON 자체는 `as const`를 지원하지 않으므로 템플릿 변수 매개변수는 유연한 타입으로 추론됩니다.
+
+```ts
+import koKR from "./messages/ko-KR.json";
+import enUS from "./messages/en-US.json";
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "ko-KR",
+  messages: { "ko-KR": koKR, "en-US": enUS },
+});
+```
+
+### 동적 온디맨드 임포트 (`await import`)
+
+Top-Level Await를 지원하는 모던 런타임 환경(Astro, Vite, Node 22+, Bun 등)에서는 `await import(...)`를 통해 딕셔너리 파일을 동적으로 가져올 수 있습니다:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const koKR = (await import("./messages/ko-KR.ts")).default;
+const enUS = (await import("./messages/en-US.ts")).default;
+
+export const { getTranslations } = createI18n({
+  defaultLanguage: "ko-KR",
+  messages: { "ko-KR": koKR, "en-US": enUS },
+});
+```
+
+#### 로케일 분할 (Locale Code Splitting)
+
+다국어 프로젝트에서 모든 언어의 딕셔너리가 단일 클라이언트 번들에 포함되는 것을 방지하기 위해, 로더 맵(Loader Map)을 정의하여 필요한 로케일만 동적으로 분할 로드할 수 있습니다:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+const loaders = {
+  "ko-KR": () => import("./messages/ko-KR.ts"),
+  "en-US": () => import("./messages/en-US.ts"),
+} as const;
+
+export type SupportedLanguage = keyof typeof loaders;
+
+export async function loadI18n<L extends SupportedLanguage>(lang: L) {
+  const messages = (await loaders[lang]()).default;
+  return createI18n({
+    defaultLanguage: lang,
+    messages: { [lang]: messages } as Record<L, typeof messages>,
+  });
+}
+```
+
+> **타입 안전성 보장**: 딕셔너리 파일이 `export default { ... } as const;` 또는 JSON 포맷으로 내보내지는 한, `await import`를 통한 동적 임포트 환경에서도 모든 계층의 네임스페이스, 리터럴 키 자동 완성, 매개변수 타입 검증(`{param: type}`)이 온전하게 유지됩니다.

@@ -1,0 +1,71 @@
+---
+title: "Espacios de nombres y alcance"
+description: "Organización de diccionarios de traducción mediante espacios de nombres y métodos de extracción de datos."
+order: 3
+lang: "es-ES"
+---
+
+# Espacios de nombres y alcance
+
+Organizar las claves de traducción por módulos funcionales o páginas evita colisiones de nombres y simplifica las rutas de llamada.
+
+## Traductores con alcance (Scoped Translators)
+
+Pasar un espacio de nombres como segundo argumento al invocar `getTranslations` devuelve una función de traducción limitada al ámbito de dicho espacio de nombres:
+
+```ts
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "Estadísticas en tiempo real",
+      refresh: "Actualizar datos",
+    },
+  },
+} as const;
+
+// Delimitar al espacio de nombres anidado
+const t = getTranslations("es-ES", "admin.dashboard");
+
+t("metrics"); // "Estadísticas en tiempo real"
+t("refresh"); // "Actualizar datos"
+```
+
+## Traductores globales planos (Global Flat Translators)
+
+Si se omite el parámetro de espacio de nombres, `getTranslations` devuelve un traductor raíz que permite acceder a claves anidadas mediante rutas separadas por puntos:
+
+```ts
+const t = getTranslations("es-ES");
+
+t("admin.dashboard.metrics"); // "Estadísticas en tiempo real"
+```
+
+## Extracción de datos en bruto `t.raw()`
+
+Cuando necesites obtener directamente estructuras en bruto, como objetos de configuración o matrices (arrays), puedes utilizar `t.raw()`:
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("es-ES");
+
+const endpoints = t.raw("config.endpoints");
+// Tipo inferido: readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## Comprobación de existencia de claves `t.has()`
+
+Comprueba si una clave específica existe en el idioma actual o en el idioma de respaldo (fallback) sin generar advertencias de clave faltante:
+
+```ts
+const t = getTranslations("es-ES", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

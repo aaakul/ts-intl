@@ -1,0 +1,29 @@
+---
+title: "錯誤處理與回退"
+description: "設定錯誤處理與回退。"
+order: 6
+lang: "zh-Hant"
+---
+
+# 錯誤處理與回退
+
+在初始化時配置錯誤回呼與缺少文案回退策略：
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "zh-Hant",
+  messages: { "zh-Hant": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] 缺少翻譯鍵 "${error.key}"（語言: ${error.lang}）`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[未翻譯: ${key}]`;
+  },
+});
+```

@@ -1,0 +1,105 @@
+---
+title: "型別推導與驗證"
+description: "編譯期嚴格型別檢查、參數約束條件與多語言詞典結構對齊驗證。"
+order: 2
+lang: "zh-Hant"
+---
+
+# 型別推導與驗證
+
+`ts-intl` 利用 TypeScript 型別系統，檢查不存在的鍵、缺少參數及跨語言詞典結構不一致的問題。
+
+## 鍵檢查與自動補全
+
+無論使用命名空間還是點分隔路徑，IDE 均支援鍵名自動補全與型別檢查：
+
+```ts
+const tCommon = getTranslations("zh-Hant", "common");
+tCommon("title"); // 自動補全: "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_typo");
+```
+
+點路徑全域呼叫形式：
+
+```ts
+const tRoot = getTranslations("zh-Hant");
+tRoot("common.title"); // 自動補全: "common.title" | "common.greeting" | ...
+```
+
+## 參數約束條件
+
+模板包含佔位符時，必須傳遞對應的參數物件；不包含佔位符時，禁止傳遞多餘參數：
+
+```ts
+const t = getTranslations("zh-Hant", "common");
+
+// 無佔位符：禁止傳參
+t("title");
+
+// 包含佔位符：必須傳入參數物件
+t("greeting", { name: "張三" });
+
+// @ts-expect-error 缺少必要參數 { name: string }
+t("greeting");
+```
+
+## 明確參數型別標註
+
+在 TypeScript 詞典中，可透過 `{name:type}` 語法明確指定參數純量型別，目前支援 `string`、`number` 與 `Date`：
+
+```ts
+export default {
+  status:
+    "使用者 {name: string} 於 {timestamp: Date} 登入，總計: {total: number}",
+} as const;
+```
+
+TypeScript 會驗證呼叫方傳入的參數型別：
+
+```ts
+const t = getTranslations("zh-Hant");
+
+t("status", {
+  name: "張三",
+  timestamp: new Date(),
+  total: 100,
+});
+
+// @ts-expect-error 型別 'string' 無法分配給型別 'number'
+t("status", { name: "張三", timestamp: new Date(), total: "100" });
+```
+
+## 多語言詞典結構對齊（Schema 對齊）
+
+以 `defaultLanguage` 設定的語言詞典為基準結構，其他語言在 `messages` 中配置時必須保持一致：
+
+- 其他語言中缺少鍵名時，會在初始化配置處產生型別錯誤。
+- 其他語言中包含基準語言不存在的額外鍵時，會產生型別錯誤。
+- 佔位符變數名稱必須保持一致（例如英文為 `{count}`，繁體中文和日文亦必須為 `{count}`）。
+
+```ts
+const zhHant = {
+  welcome: "歡迎你，{user: string}！",
+} as const;
+
+const enUS = {
+  // @ts-expect-error 缺少 'welcome' 鍵
+  farewell: "Goodbye",
+} as const;
+
+createI18n({
+  defaultLanguage: "zh-Hant",
+  messages: { "zh-Hant": zhHant, "en-US": enUS },
+});
+```
+
+## 執行時期詞典驗證
+
+在開發環境（非正式環境模式）下，`createI18n` 會在初始化階段執行詞典驗證：
+
+- 檢測詞典鍵中是否誤包含點號 `.`（點號為命名空間層級保留符號）。
+- 遇到結構差異時透過 `onError` 拋出診斷警告。
+
+正式建置（Production build）時此驗證會自動關閉，不產生額外執行時期開銷。

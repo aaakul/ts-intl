@@ -1,0 +1,105 @@
+---
+title: "Inferencia de tipos y validación"
+description: "Comprobación estricta de tipos en tiempo de compilación, restricciones de parámetros y validación de alineación de estructura en diccionarios multilingües."
+order: 2
+lang: "es-ES"
+---
+
+# Inferencia de tipos y validación
+
+`ts-intl` aprovecha el sistema de tipos de TypeScript para detectar claves inexistentes, parámetros faltantes e inconsistencias estructurales entre diccionarios de distintos idiomas.
+
+## Comprobación de claves y autocompletado
+
+Tanto si se utilizan espacios de nombres como rutas separadas por puntos, los IDE ofrecen autocompletado y comprobación estática de tipos para las claves:
+
+```ts
+const tCommon = getTranslations("es-ES", "common");
+tCommon("title"); // Autocompletado: "title" | "greeting" | "items"
+
+// @ts-expect-error
+tCommon("title_misspelled");
+```
+
+Formato de invocación global mediante rutas por puntos:
+
+```ts
+const tRoot = getTranslations("es-ES");
+tRoot("common.title"); // Autocompletado: "common.title" | "common.greeting" | ...
+```
+
+## Restricciones de parámetros
+
+Cuando una plantilla contiene marcadores de posición (placeholders), se debe pasar obligatoriamente el objeto de parámetros correspondiente; si no contiene marcadores de posición, no se permite pasar argumentos adicionales:
+
+```ts
+const t = getTranslations("es-ES", "common");
+
+// Sin marcadores: no se permiten parámetros
+t("title");
+
+// Con marcador: los parámetros son obligatorios
+t("greeting", { name: "Alicia" });
+
+// @ts-expect-error Falta el parámetro obligatorio { name: string }
+t("greeting");
+```
+
+## Anotaciones explícitas de tipos de parámetros
+
+En diccionarios TypeScript, los tipos de parámetros escalares se pueden especificar explícitamente mediante la sintaxis `{name:type}`; actualmente se admiten `string`, `number` y `Date`:
+
+```ts
+export default {
+  status:
+    "El usuario {name: string} inició sesión a las {timestamp: Date}. Total: {total: number}",
+} as const;
+```
+
+TypeScript valida los tipos de parámetros proporcionados por el invocador:
+
+```ts
+const t = getTranslations("es-ES");
+
+t("status", {
+  name: "Alicia",
+  timestamp: new Date(),
+  total: 42,
+});
+
+// @ts-expect-error El tipo 'string' no se puede asignar al tipo 'number'
+t("status", { name: "Alicia", timestamp: new Date(), total: "42" });
+```
+
+## Alineación de estructura entre diccionarios multilingües (Schema Alignment)
+
+Tomando como estructura de referencia el diccionario del idioma configurado en `defaultLanguage`, los demás idiomas configurados en `messages` deben mantener una estructura idéntica:
+
+- Si faltan claves en otros idiomas, se genera un error de tipo en la configuración de inicialización.
+- Si otros idiomas contienen claves adicionales que no existen en el idioma de referencia, se genera un error de tipo.
+- Los nombres de las variables de marcador de posición deben coincidir exactamente (por ejemplo, si en español es `{count}`, en inglés y japonés también debe ser `{count}`).
+
+```ts
+const esES = {
+  welcome: "¡Te damos la bienvenida, {user: string}!",
+} as const;
+
+const enUS = {
+  // @ts-expect-error Falta la clave 'welcome'
+  farewell: "Goodbye",
+} as const;
+
+createI18n({
+  defaultLanguage: "es-ES",
+  messages: { "es-ES": esES, "en-US": enUS },
+});
+```
+
+## Validación de diccionarios en tiempo de ejecución
+
+En entornos de desarrollo (modo que no es de producción), `createI18n` realiza la validación de diccionarios durante la fase de inicialización:
+
+- Detecta si las claves de los diccionarios contienen inadvertidamente puntos `.` (el punto es un símbolo reservado para la jerarquía de espacios de nombres).
+- Emite advertencias de diagnóstico a través de `onError` cuando se detectan discrepancias estructurales.
+
+Esta validación se desactiva automáticamente en las compilaciones de producción, sin suponer ninguna sobrecarga adicional en tiempo de ejecución.

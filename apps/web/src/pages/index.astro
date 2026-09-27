@@ -1,19 +1,114 @@
 ---
 import { SITE_CONFIG } from "@/config/site";
+import { languages, defaultLanguage } from "@/i18n";
+import { LOCALE_COOKIE_NAME } from "@/lib/locale-cookie";
 
-// Completely static root redirect to default language (/en-US)
-const canonicalUrl = new URL("/en-US", Astro.site ?? SITE_CONFIG.url).href;
+// Fallback canonical URL pointing to default language
+const canonicalUrl = new URL(`/${defaultLanguage}`, Astro.site ?? SITE_CONFIG.url).href;
 ---
 
 <!doctype html>
-<html lang="en-US">
+<html lang={defaultLanguage}>
   <head>
     <meta charset="utf-8" />
-    <title>Redirecting to ts-intl (English)...</title>
-    <meta http-equiv="refresh" content="0;url=/en-US" />
+    <title>Redirecting to ts-intl...</title>
+    <meta name="robots" content="noindex, follow" />
+    <noscript>
+      <meta http-equiv="refresh" content={`0;url=/${defaultLanguage}`} />
+    </noscript>
     <link rel="canonical" href={canonicalUrl} />
-    <script is:inline>
-      window.location.replace("/en-US");
+    <script is:inline define:vars={{ languages, defaultLanguage, cookieName: LOCALE_COOKIE_NAME }}>
+      (function () {
+        var supported = languages || [];
+        var fallback = defaultLanguage || "en-US";
+
+        // Read and validate preferred locale from cookie
+        function getCookieLanguage() {
+          try {
+            var match = document.cookie.match(
+              new RegExp("(?:^|;\\s*)" + cookieName.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&") + "=([^;]+)")
+            );
+            if (match) {
+              var val = decodeURIComponent(match[1]).trim();
+              for (var i = 0; i < supported.length; i++) {
+                if (supported[i].toLowerCase() === val.toLowerCase()) {
+                  return supported[i];
+                }
+              }
+            }
+          } catch (e) {
+            // Silently fall back
+          }
+          return null;
+        }
+
+        function findMatchingLanguage() {
+          try {
+            var rawList =
+              navigator.languages && navigator.languages.length
+                ? navigator.languages
+                : [
+                    navigator.language ||
+                      navigator.userLanguage ||
+                      navigator.browserLanguage,
+                  ];
+
+            for (var i = 0; i < rawList.length; i++) {
+              var item = rawList[i];
+              if (!item || typeof item !== "string") continue;
+              var tag = item.trim().toLowerCase().replace(/_/g, "-");
+              if (!tag) continue;
+
+              // 1. Exact match (case-insensitive)
+              for (var j = 0; j < supported.length; j++) {
+                if (supported[j].toLowerCase() === tag) {
+                  return supported[j];
+                }
+              }
+
+              // 2. Chinese variants matching
+              if (tag.indexOf("zh") === 0 || tag.indexOf("yue") === 0) {
+                // Traditional Chinese
+                if (
+                  tag === "zh-tw" ||
+                  tag === "zh-hk" ||
+                  tag === "zh-mo" ||
+                  tag === "zh-hant" ||
+                  tag.indexOf("hant") !== -1 ||
+                  tag.indexOf("yue") !== -1
+                ) {
+                  if (supported.indexOf("zh-Hant") !== -1) {
+                    return "zh-Hant";
+                  }
+                }
+                if (supported.indexOf("zh-Hans") !== -1) {
+                  return "zh-Hans";
+                }
+              }
+
+              // 3. Match by primary language subtag (e.g., 'ja' in 'ja-JP', 'fr' in 'fr-FR', 'es' in 'es-ES')
+              var primary = tag.split("-")[0];
+              if (primary !== "zh" && primary !== "yue") {
+                for (var k = 0; k < supported.length; k++) {
+                  var supportedPrimary = supported[k].toLowerCase().split("-")[0];
+                  if (supportedPrimary === primary) {
+                    return supported[k];
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Silently fall back to default
+          }
+
+          return fallback;
+        }
+
+        var targetLang = getCookieLanguage() || findMatchingLanguage();
+        var search = window.location.search || "";
+        var hash = window.location.hash || "";
+        window.location.replace("/" + targetLang + search + hash);
+      })();
     </script>
   </head>
   <style>
@@ -26,5 +121,9 @@ const canonicalUrl = new URL("/en-US", Astro.site ?? SITE_CONFIG.url).href;
       color: CanvasText;
     }
   </style>
-  <body></body>
+  <body>
+    <noscript>
+      <p>Redirecting to <a href={`/${defaultLanguage}`}>ts-intl</a>...</p>
+    </noscript>
+  </body>
 </html>

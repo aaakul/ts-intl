@@ -8,7 +8,18 @@ const docs = defineCollection({
     title: z.string(),
     description: z.string(),
     order: z.number(),
-    lang: z.enum(["en-US", "zh-Hans", "ja-JP"]),
+    lang: z.enum([
+      "en-US",
+      "zh-Hans",
+      "ja-JP",
+      "zh-Hant",
+      "ko-KR",
+      "es-ES",
+      "de-DE",
+      "fr-FR",
+      "ru-RU",
+      "it-IT",
+    ]),
   }),
 });
 

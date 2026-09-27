@@ -1,0 +1,101 @@
+---
+title: "Web Intl 格式化工具"
+description: "基於 Web Intl API 的型別安全封裝與實例快取格式化工具。"
+order: 5
+lang: "zh-Hant"
+---
+
+# Web Intl 格式化工具
+
+頻繁建立 `Intl.NumberFormat` 或 `Intl.DateTimeFormat` 實例會產生不必要的效能開銷。`ts-intl` 封裝了 Web 標準 Intl API，並提供內建的實例快取機制。
+
+## 取得格式化工具實例
+
+### 方式 1：透過 `createI18n` 取得 `getFormatter`（推薦）
+
+該方式直接繼承在全域配置中預設的格式規則、時區及錯誤處理配置：
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+export const { getTranslations, getFormatter } = createI18n({
+  defaultLanguage: "zh-Hant",
+  formats: {
+    number: {
+      twd: { style: "currency", currency: "TWD" },
+      compact: { notation: "compact" },
+    },
+    dateTime: {
+      short: { dateStyle: "short" },
+    },
+  },
+  messages: {
+    "zh-Hant": {},
+  },
+});
+
+const formatter = getFormatter("zh-Hant");
+```
+
+### 方式 2：獨立呼叫 `createFormatter(options)`
+
+適用於不依賴完整 i18n 實例的獨立元件或公用工具模組：
+
+```ts
+import { createFormatter } from "@aaakul/ts-intl";
+
+const formatter = createFormatter({
+  locale: "zh-Hant",
+  formats: {
+    number: { twd: { style: "currency", currency: "TWD" } },
+  },
+});
+```
+
+## 核心格式化功能
+
+### 數字與貨幣格式化
+
+```ts
+formatter.number(1234567.89);
+// "1,234,567.89"
+
+formatter.number(888.8, "twd");
+// "$888.80"
+
+formatter.number(1200000, "compact");
+// "120萬"
+```
+
+### 日期與時間
+
+```ts
+formatter.dateTime(new Date(), { dateStyle: "full" });
+// "2026年9月18日 星期五"
+
+formatter.dateTimeRange(new Date("2026-09-01"), new Date("2026-09-05"));
+// "2026/9/1 – 2026/9/5"
+```
+
+### 相對時間計算
+
+根據時間差自動比對時間單位：
+
+```ts
+const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+formatter.relativeTime(twoHoursAgo);
+// "2 小時前"
+```
+
+### 清單與本地化名稱展示
+
+```ts
+formatter.list(["蘋果", "香蕉", "橘子"]);
+// "蘋果、香蕉和橘子"
+
+formatter.displayName("ja-JP", { type: "language" });
+// "日文（日本）"
+
+formatter.displayName("ja", { type: "language" });
+// "日文"
+```

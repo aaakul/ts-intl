@@ -9,6 +9,7 @@ interface Props {
   lang: SupportedLanguage;
   canonicalPath?: string;
   noindex?: boolean;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const {
@@ -17,11 +18,26 @@ const {
   lang,
   canonicalPath = "",
   noindex = false,
+  jsonLd,
 } = Astro.props;
 
 const siteBase = Astro.site ?? SITE_CONFIG.url;
 const fullTitle = title.includes("ts-intl") ? title : `${title} | ts-intl`;
 const canonicalUrl = new URL(`/${lang}${canonicalPath}`, siteBase).href;
+const ogImageUrl = new URL("/screenshot.jpg", siteBase).href;
+
+const OG_LOCALES: Record<SupportedLanguage, string> = {
+  "en-US": "en_US",
+  "zh-Hans": "zh_CN",
+  "ja-JP": "ja_JP",
+  "zh-Hant": "zh_TW",
+  "ko-KR": "ko_KR",
+  "es-ES": "es_ES",
+  "de-DE": "de_DE",
+  "fr-FR": "fr_FR",
+  "ru-RU": "ru_RU",
+  "it-IT": "it_IT",
+};
 ---
 
 <!doctype html>
@@ -75,9 +91,25 @@ const canonicalUrl = new URL(`/${lang}${canonicalPath}`, siteBase).href;
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:locale" content={OG_LOCALES[lang] || "en_US"} />
+    {languages.filter((l) => l !== lang).map((l) => (
+      <meta property="og:locale:alternate" content={OG_LOCALES[l] || l} />
+    ))}
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content="ts-intl preview" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <!-- Structured Data (JSON-LD) -->
+    {jsonLd && (
+      <script
+        type="application/ld+json"
+        is:inline
+        set:html={JSON.stringify(jsonLd)}
+      />
+    )}
 
     <!-- Theme Initialization Script (Prevents FOUC) -->
     <script is:inline>

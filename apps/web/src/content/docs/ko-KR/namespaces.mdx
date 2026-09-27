@@ -1,0 +1,71 @@
+---
+title: "네임스페이스 및 스코프"
+description: "네임스페이스를 통한 번역 딕셔너리 구조화 및 데이터 추출 방식."
+order: 3
+lang: "ko-KR"
+---
+
+# 네임스페이스 및 스코프
+
+기능 모듈이나 페이지 단위로 번역 메시지를 구조화하면 키 충돌을 방지하고 호출 경로를 단순화할 수 있습니다.
+
+## 스코프 번역기 (Scoped Translators)
+
+`getTranslations` 호출 시 두 번째 인자로 네임스페이스를 전달하면 해당 네임스페이스 스코프로 한정된 번역 함수가 반환됩니다:
+
+```ts
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "실시간 모니터링 지표",
+      refresh: "데이터 새로고침",
+    },
+  },
+} as const;
+
+// 중첩된 다단계 네임스페이스에 바인딩
+const t = getTranslations("ko-KR", "admin.dashboard");
+
+t("metrics"); // "실시간 모니터링 지표"
+t("refresh"); // "데이터 새로고침"
+```
+
+## 글로벌 플랫 번역기 (Global Flat Translators)
+
+네임스페이스 인자를 생략하면 `getTranslations`는 루트 번역기를 반환하며, 점 표기법(Dot-path)을 통해 중첩된 키에 직접 접근할 수 있습니다:
+
+```ts
+const t = getTranslations("ko-KR");
+
+t("admin.dashboard.metrics"); // "실시간 모니터링 지표"
+```
+
+## 원본 데이터 추출 `t.raw()`
+
+설정 객체나 배열과 같은 원본 데이터 구조를 그대로 가져와야 할 때는 `t.raw()`를 사용할 수 있습니다:
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("ko-KR");
+
+const endpoints = t.raw("config.endpoints");
+// 추론된 타입: readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## 키 존재 여부 확인 `t.has()`
+
+누락된 키 경고를 발생시키지 않고, 지정한 키가 현재 언어 또는 폴백 언어에 존재하는지 확인합니다:
+
+```ts
+const t = getTranslations("ko-KR", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

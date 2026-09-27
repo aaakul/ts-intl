@@ -1,0 +1,195 @@
+---
+title: "Интеграция с Astro"
+description: "Контекстная и middleware-интернационализация для Astro с помощью ts-intl-astro без сквозной передачи пропсов между компонентами."
+order: 7
+lang: "ru-RU"
+---
+
+# Интеграция с Astro (ts-intl-astro)
+
+`ts-intl-astro` — это пакет интеграции для Astro, созданный поверх базовой библиотеки `@aaakul/ts-intl`. Благодаря управлению языковым состоянием запроса через асинхронный контекст (`AsyncLocalStorage`), он избавляет от необходимости сквозной передачи пропсов языка по дереву компонентов (Prop Drilling).
+
+## Ключевые возможности
+
+- **Ноль Prop Drilling**: Благодаря `AsyncLocalStorage` и механизму middleware Astro в Node.js и современных средах выполнения, любой компонент может напрямую вызывать `useTranslations()` для получения функций перевода под текущий язык запроса.
+- **Автоматическое внедрение Middleware**: Регистрация интеграции в `astro.config.mjs` автоматически внедряет pre-middleware в конвейер рендеринга Astro для определения текущей локали страницы. Поддерживаются `context.currentLocale`, параметры маршрутов (`[lang]`, `[locale]`) и анализ путей URL.
+- **Строгая типобезопасность**: Наследует полный вывод типов во время компиляции от `ts-intl`, включая ограничения пространств имён, автодополнение ключей, валидацию параметров ICU и проверку соответствия многоязычных словарей.
+
+## Установка
+
+Установите `ts-intl-astro` и его зависимости в вашем проекте Astro:
+
+```bash
+pnpm add ts-intl-astro
+# или
+npm install ts-intl-astro
+# или
+yarn add ts-intl-astro
+```
+
+## Быстрая настройка
+
+### 1. Инициализация экземпляра i18n
+
+Создайте и экспортируйте хуки перевода и конфигурацию экземпляра в `src/i18n/index.ts`:
+
+```ts
+// src/i18n/index.ts
+import { createAstroI18n } from "ts-intl-astro";
+import ruRU from "./messages/ru-RU";
+import enUS from "./messages/en-US";
+
+export const {
+  useTranslations,
+  useLocale,
+  useFormatter,
+  languages,
+  defaultLanguage,
+} = createAstroI18n({
+  defaultLanguage: "ru-RU",
+  messages: {
+    "ru-RU": ruRU,
+    "en-US": enUS,
+  },
+});
+
+export type SupportedLanguage = (typeof languages)[number];
+```
+
+### 2. Регистрация интеграции Astro
+
+Импортируйте и подключите `tsIntl` в конфигурационном файле `astro.config.mjs`:
+
+```js
+// astro.config.mjs
+import { defineConfig } from "astro/config";
+import tsIntl from "ts-intl-astro";
+
+export default defineConfig({
+  integrations: [tsIntl()],
+});
+```
+
+Интеграция автоматически регистрирует контекстный middleware во время сборки и выполнения Astro. Когда страница обрабатывает запрос или генерирует статические страницы, middleware определяет локаль маршрута и внедряет активный контекст в область видимости запроса.
+
+## Использование в компонентах
+
+Благодаря подключенному контекстному middleware компонентам не требуется объявлять или принимать проп `lang`:
+
+### Базовое использование
+
+```astro
+---
+// src/components/Header.astro
+import { useTranslations, useLocale } from "@/i18n";
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<header class="flex items-center justify-between p-4">
+  <nav class="space-x-4">
+    <a href={`/${lang}`}>{t("home")}</a>
+    <a href={`/${lang}/docs`}>{t("docs")}</a>
+    <a href={`/${lang}/pricing`}>{t("pricing")}</a>
+  </nav>
+</header>
+```
+
+### Явное переопределение локали
+
+Если изолированный компонент необходимо отрендерить с определенной локалью (например, в превью переключателя языков), передайте параметр `{ locale }` для явного переопределения:
+
+```astro
+---
+import { useTranslations } from "@/i18n";
+
+const tEn = useTranslations("hero", { locale: "en-US" });
+---
+
+<p>{tEn("title")}</p>
+```
+
+### Использование форматтеров
+
+Вызывайте `useFormatter()` для доступа к кэшированным форматтерам Web `Intl`, привязанным к контексту текущей локали:
+
+```astro
+---
+import { useFormatter } from "@/i18n";
+
+const fmt = useFormatter();
+const formattedPrice = fmt.number(129.99, { style: "currency", currency: "USD" });
+const formattedDate = fmt.dateTime(new Date(), { dateStyle: "medium" });
+---
+
+<div>
+  <span>{formattedPrice}</span>
+  <time>{formattedDate}</time>
+</div>
+```
+
+## Настройка и использование сегментов маршрута (Route Segments)
+
+Рекомендуется организовывать структуру многоязычных страниц с помощью динамических сегментов маршрута, таких как `src/pages/[lang]/index.astro` или `src/pages/[locale]/about.astro`.
+
+### Генерация статических маршрутов (SSG)
+
+В режиме статической генерации сайтов (SSG) используйте экспортированный массив `languages` совместно с `getStaticPaths()`:
+
+```astro
+---
+// src/pages/[lang]/index.astro
+import { languages, useTranslations, useLocale } from "@/i18n";
+
+export function getStaticPaths() {
+  return languages.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const t = useTranslations("nav");
+const lang = useLocale();
+---
+
+<nav>
+  <a href={`/${lang}`}>{t("home")}</a>
+  <a href={`/${lang}/docs`}>{t("docs")}</a>
+</nav>
+```
+
+### Механизм разрешения сегментов маршрута
+
+- **Имена параметров сегментов маршрута по умолчанию**: По умолчанию middleware автоматически проверяет параметры динамических маршрутов `context.params.lang` и `context.params.locale`. Если ваша папка названа `[lang]` или `[locale]`, всё работает без дополнительной настройки.
+- **Внедрение контекста без пропсов**: Перед тем как страница и её дочерние компоненты будут отрендерены, middleware извлекает локаль из сегмента маршрута и записывает её в асинхронную область видимости. Любые вложенные дочерние компоненты могут напрямую вызывать `useTranslations()` или `useLocale()` для доступа к активной локали, полностью устраняя необходимость проброса пропсов сверху вниз.
+- **Пользовательские имена параметров маршрута**: Если в маршрутах вашего проекта используются другие имена параметров (например, `src/pages/[localeCode]/...`), укажите их через опцию `paramNames` в `createAstroI18n`:
+
+```ts
+export const {
+  /* ... */
+} = createAstroI18n({
+  defaultLanguage: "ru-RU",
+  paramNames: ["localeCode", "lang", "locale"],
+  messages: {
+    /* ... */
+  },
+});
+```
+
+## Стратегия определения локали
+
+`ts-intl-astro` определяет локаль запроса по следующему приоритету:
+
+1. **Встроенный `context.currentLocale` в Astro** (нативная маршрутизация i18n в Astro)
+2. **Динамические параметры маршрута** (проверяет `context.params.lang` и `context.params.locale`, настраивается через `paramNames`)
+3. **Анализ префикса пути URL** (например, извлечение первого сегмента `/ru-RU/...`)
+4. **Резервный язык по умолчанию** (`defaultLanguage`, указанный в конфигурации)
+
+## Справочник API
+
+| API                           | Тип               | Описание                                                                                                |
+| :---------------------------- | :---------------- | :------------------------------------------------------------------------------------------------------ |
+| `createAstroI18n(config)`     | `Function`        | Инициализирует экземпляр i18n для Astro; поддерживает `defaultLanguage`, `messages` и `paramNames`       |
+| `useTranslations(ns?, opts?)` | `Function`        | Возвращает функцию перевода `t`, привязанную к текущему контексту рендеринга                            |
+| `useLocale()`                 | `() => string`    | Возвращает код активного языка для текущего контекста рендеринга                                        |
+| `useFormatter(opts?)`         | `() => Formatter` | Возвращает кэшированный форматтер Web `Intl`, привязанный к контексту текущей локали                    |

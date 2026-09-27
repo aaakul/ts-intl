@@ -78,7 +78,7 @@ import BenchmarkChart from "@/components/BenchmarkChart.astro";
 
 ### 3. 传统运行时的体积膨胀成因
 
-- `i18next` 自身包含丰富的配置系统、事件流、AST 解析器及格式化器，基础运行库体积较大。
+- `i18next` 自身包含丰富的配置系统、事件发射器、AST 解析器及格式化器，基础运行库体积较大。
 - 在常规配置下，开发者常通过静态 `import` 将各语言资源整体导入主入口，导致所有语言字典无论是否使用均被打包到客户端主 chunk 中。
 
 ---

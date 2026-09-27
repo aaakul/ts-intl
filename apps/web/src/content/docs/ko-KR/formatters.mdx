@@ -1,0 +1,101 @@
+---
+title: "Web Intl 포매터"
+description: "Web Intl API 기반의 타입 안전한 래퍼 및 인스턴스 캐싱 포매터."
+order: 5
+lang: "ko-KR"
+---
+
+# Web Intl 포매터
+
+`Intl.NumberFormat`이나 `Intl.DateTimeFormat` 인스턴스를 빈번하게 생성하면 불필요한 성능 오버헤드가 발생합니다. `ts-intl`은 표준 Web Intl API를 타입 안전하게 래핑하고 강력한 내장 인스턴스 캐싱 메커니즘을 제공합니다.
+
+## 포매터 인스턴스 생성
+
+### 방법 1: `createI18n`을 통해 `getFormatter` 가져오기 (권장)
+
+글로벌 설정에 미리 정의된 포맷 규칙, 시간대(타임존), 오류 처리 구성을 그대로 상속받습니다:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+export const { getTranslations, getFormatter } = createI18n({
+  defaultLanguage: "ko-KR",
+  formats: {
+    number: {
+      krw: { style: "currency", currency: "KRW" },
+      compact: { notation: "compact" },
+    },
+    dateTime: {
+      short: { dateStyle: "short" },
+    },
+  },
+  messages: {
+    "ko-KR": {},
+  },
+});
+
+const formatter = getFormatter("ko-KR");
+```
+
+### 방법 2: 독립적으로 `createFormatter(options)` 호출
+
+전체 i18n 인스턴스에 의존하지 않는 독립형 컴포넌트나 유틸리티 모듈에 적합합니다:
+
+```ts
+import { createFormatter } from "@aaakul/ts-intl";
+
+const formatter = createFormatter({
+  locale: "ko-KR",
+  formats: {
+    number: { krw: { style: "currency", currency: "KRW" } },
+  },
+});
+```
+
+## 핵심 포맷팅 기능
+
+### 숫자 및 통화 포맷팅
+
+```ts
+formatter.number(1234567.89);
+// "1,234,567.89"
+
+formatter.number(25000, "krw");
+// "₩25,000"
+
+formatter.number(1500000, "compact");
+// "150만"
+```
+
+### 날짜 및 시간
+
+```ts
+formatter.dateTime(new Date(), { dateStyle: "full" });
+// "2026년 9월 18일 금요일"
+
+formatter.dateTimeRange(new Date("2026-09-01"), new Date("2026-09-05"));
+// "2026. 9. 1. ~ 2026. 9. 5."
+```
+
+### 상대적 시간 계산
+
+시간 차이를 계산하여 알맞은 시간 단위를 자동으로 매칭합니다:
+
+```ts
+const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+formatter.relativeTime(twoHoursAgo);
+// "2시간 전"
+```
+
+### 목록 및 현지화된 언어 이름 표시
+
+```ts
+formatter.list(["사과", "바나나", "오렌지"]);
+// "사과, 바나나 및 오렌지"
+
+formatter.displayName("ja-JP", { type: "language" });
+// "일본어(일본)"
+
+formatter.displayName("ja", { type: "language" });
+// "일본어"
+```

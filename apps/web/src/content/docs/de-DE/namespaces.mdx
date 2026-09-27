@@ -1,0 +1,71 @@
+---
+title: "Namespaces & Scoping"
+description: "Strukturierung von Übersetzungswörterbüchern mit Namespaces und Datenextraktionsmethoden."
+order: 3
+lang: "de-DE"
+---
+
+# Namespaces & Scoping
+
+Das Strukturieren von Übersetzungsschlüsseln nach Funktionsmodulen oder Seiten verhindert Namenskollisionen und vereinfacht die Aufrufpfade.
+
+## Scoped-Übersetzer (Namespace-gebunden)
+
+Wird beim Aufruf von `getTranslations` ein Namespace als zweites Argument übergeben, liefert die Methode eine Übersetzungsfunktion zurück, die an diesen Namespace gebunden ist:
+
+```ts
+const messages = {
+  admin: {
+    dashboard: {
+      metrics: "Live-Statistiken",
+      refresh: "Daten aktualisieren",
+    },
+  },
+} as const;
+
+// Auf verschachtelten Namespace einschränken
+const t = getTranslations("de-DE", "admin.dashboard");
+
+t("metrics"); // "Live-Statistiken"
+t("refresh"); // "Daten aktualisieren"
+```
+
+## Globale flache Übersetzer
+
+Wird der Namespace-Parameter weggelassen, gibt `getTranslations` einen Root-Übersetzer zurück, der den Zugriff auf verschachtelte Schlüssel über punktseparierte Pfade unterstützt:
+
+```ts
+const t = getTranslations("de-DE");
+
+t("admin.dashboard.metrics"); // "Live-Statistiken"
+```
+
+## Rohdaten extrahieren mit `t.raw()`
+
+Wenn Sie rohe Datenstrukturen wie Konfigurationsobjekte oder Arrays direkt abrufen möchten, können Sie `t.raw()` verwenden:
+
+```ts
+const messages = {
+  config: {
+    maxRetries: 3,
+    endpoints: ["api-1.example.com", "api-2.example.com"],
+  },
+} as const;
+
+const t = getTranslations("de-DE");
+
+const endpoints = t.raw("config.endpoints");
+// Abgeleiteter Typ: readonly ["api-1.example.com", "api-2.example.com"]
+```
+
+## Vorhandensein von Schlüsseln prüfen mit `t.has()`
+
+Prüft, ob ein bestimmter Schlüssel in der aktuellen Sprache oder der Fallback-Sprache vorhanden ist, ohne Warnungen zu fehlenden Schlüsseln auszulösen:
+
+```ts
+const t = getTranslations("de-DE", "features");
+
+if (t.has("betaFeatureBadge")) {
+  renderBadge(t("betaFeatureBadge"));
+}
+```

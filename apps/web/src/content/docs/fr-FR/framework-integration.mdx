@@ -1,0 +1,29 @@
+---
+title: "Gestion des erreurs et repli"
+description: "Configurer la gestion des erreurs et les stratégies de repli."
+order: 6
+lang: "fr-FR"
+---
+
+# Gestion des erreurs et repli
+
+Configurez les rappels d'erreur et les stratégies de repli en cas de message manquant lors de l'initialisation :
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "fr-FR",
+  messages: { "fr-FR": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] Clé de traduction manquante "${error.key}" (langue : ${error.lang})`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[Traduction manquante : ${key}]`;
+  },
+});
+```

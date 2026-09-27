@@ -1,0 +1,29 @@
+---
+title: "Gestione degli errori e fallback"
+description: "Configurazione della gestione degli errori e del fallback."
+order: 6
+lang: "it-IT"
+---
+
+# Gestione degli errori e fallback
+
+Configura i callback di errore e le strategie di fallback per i messaggi mancanti durante l'inizializzazione:
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "it-IT",
+  messages: { "it-IT": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] Chiave di traduzione mancante "${error.key}" (lingua: ${error.lang})`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[Traduzione mancante: ${key}]`;
+  },
+});
+```

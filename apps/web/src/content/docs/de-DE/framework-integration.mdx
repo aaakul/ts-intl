@@ -1,0 +1,29 @@
+---
+title: "Fehlerbehandlung & Fallback"
+description: "Konfiguration von Fehlerbehandlung und Fallback-Strategien."
+order: 6
+lang: "de-DE"
+---
+
+# Fehlerbehandlung & Fallback
+
+Konfigurieren Sie Fehler-Callbacks und Strategien für fehlende Übersetzungstexte bei der Initialisierung:
+
+```ts
+import { createI18n, I18nError, I18nErrorCode } from "@aaakul/ts-intl";
+
+export const i18n = createI18n({
+  defaultLanguage: "de-DE",
+  messages: { "de-DE": {} },
+  onError(error: I18nError) {
+    if (error.code === I18nErrorCode.MISSING_MESSAGE) {
+      console.warn(
+        `[ts-intl] Fehlender Übersetzungsschlüssel "${error.key}" (Sprache: ${error.lang})`,
+      );
+    }
+  },
+  getMessageFallback({ key }) {
+    return `[Fehlende Übersetzung: ${key}]`;
+  },
+});
+```

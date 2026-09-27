@@ -1,0 +1,101 @@
+---
+title: "Web-Intl-Formatierer"
+description: "Typsichere Wrapper und instanzgecachte Formatierer basierend auf den Web-Intl-APIs."
+order: 5
+lang: "de-DE"
+---
+
+# Web-Intl-Formatierer
+
+Das wiederholte Erzeugen von Instanzen wie `Intl.NumberFormat` oder `Intl.DateTimeFormat` verursacht unnötigen Performance-Overhead. `ts-intl` kapselt die standardmäßigen Web-Intl-APIs und stellt einen integrierten Mechanismus zum Caching von Instanzen bereit.
+
+## Formatierer-Instanzen beziehen
+
+### Methode 1: `getFormatter` über `createI18n` beziehen (empfohlen)
+
+Dieser Ansatz erbt vordefinierte Formatierungsregeln, Zeitzonen- und Fehlerbehandlungskonfigurationen direkt aus den globalen Einstellungen:
+
+```ts
+import { createI18n } from "@aaakul/ts-intl";
+
+export const { getTranslations, getFormatter } = createI18n({
+  defaultLanguage: "de-DE",
+  formats: {
+    number: {
+      eur: { style: "currency", currency: "EUR" },
+      compact: { notation: "compact" },
+    },
+    dateTime: {
+      short: { dateStyle: "short" },
+    },
+  },
+  messages: {
+    "de-DE": {},
+  },
+});
+
+const formatter = getFormatter("de-DE");
+```
+
+### Methode 2: `createFormatter(options)` unabhängig aufrufen
+
+Geeignet für eigenständige Komponenten oder Hilfsmodule, die nicht von einer vollständigen i18n-Instanz abhängen:
+
+```ts
+import { createFormatter } from "@aaakul/ts-intl";
+
+const formatter = createFormatter({
+  locale: "de-DE",
+  formats: {
+    number: { eur: { style: "currency", currency: "EUR" } },
+  },
+});
+```
+
+## Kernfunktionen zur Formatierung
+
+### Zahlen- & Währungsformatierung
+
+```ts
+formatter.number(1234567.89);
+// "1.234.567,89"
+
+formatter.number(2500, "eur");
+// "2.500,00 €"
+
+formatter.number(1500000, "compact");
+// "1,5 Mio."
+```
+
+### Datum & Uhrzeit
+
+```ts
+formatter.dateTime(new Date(), { dateStyle: "long" });
+// "18. September 2026"
+
+formatter.dateTimeRange(new Date("2026-09-01"), new Date("2026-09-05"));
+// "01.09.2026 – 05.09.2026"
+```
+
+### Berechnung relativer Zeitangaben
+
+Wählt anhand der Zeitdifferenz automatisch die passende Zeiteinheit aus:
+
+```ts
+const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+formatter.relativeTime(twoHoursAgo);
+// "vor 2 Stunden"
+```
+
+### Listen & lokalisierte Anzeigenamen
+
+```ts
+formatter.list(["TypeScript", "Astro", "UnoCSS"]);
+// "TypeScript, Astro und UnoCSS"
+
+formatter.displayName("ja-JP", { type: "language" });
+// "Japanisch (Japan)"
+
+formatter.displayName("ja", { type: "language" });
+// "Japanisch"
+```
