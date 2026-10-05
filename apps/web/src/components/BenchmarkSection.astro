@@ -11,12 +11,10 @@ const { lang } = Astro.props;
 const t = getTranslations(lang, "benchmark");
 ---
 
-<section
-  class="py-16 md:py-24 border-t border-neutral-200/80 dark:border-neutral-800/80 bg-neutral-50/50 dark:bg-neutral-950/40"
->
+<section class="py-16 md:py-24 bg-neutral-50/50 dark:bg-neutral-950/40">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header -->
-    <div class="text-center max-w-2xl mx-auto mb-10 md:mb-12">
+    <div class="animate-fade-in-up text-center max-w-2xl mx-auto mb-10 md:mb-12">
       <div
         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700/60 mb-3"
       >
@@ -35,12 +33,18 @@ const t = getTranslations(lang, "benchmark");
     </div>
 
     <!-- 2D Bar Chart Component -->
-    <div class="max-w-3xl mx-auto mb-8">
+    <div
+      class="animate-fade-in-up max-w-3xl mx-auto mb-8"
+      style="animation-delay: 100ms;"
+    >
       <BenchmarkChart lang={lang} />
     </div>
 
     <!-- Takeaways Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mb-8">
+    <div
+      class="animate-fade-in-up grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mb-8"
+      style="animation-delay: 200ms;"
+    >
       <div
         class="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs"
       >
@@ -81,7 +85,10 @@ const t = getTranslations(lang, "benchmark");
     </div>
 
     <!-- Link to Full Docs -->
-    <div class="text-center">
+    <div
+      class="animate-fade-in-up text-center"
+      style="animation-delay: 300ms;"
+    >
       <a
         href={`/${lang}/docs/benchmark`}
         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 transition-colors shadow-xs"
@@ -103,3 +110,29 @@ const t = getTranslations(lang, "benchmark");
     </div>
   </div>
 </section>
+
+<style>
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: opacity, transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>

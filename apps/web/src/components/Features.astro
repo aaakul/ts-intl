@@ -15,6 +15,8 @@ interface FeatureItem {
   desc: string;
 }
 
+const gzSize = "5";
+
 const features: FeatureItem[] = [
   {
     icon: "shield-check",
@@ -24,7 +26,7 @@ const features: FeatureItem[] = [
   {
     icon: "package",
     title: t("zeroDepTitle"),
-    desc: t("zeroDepDesc"),
+    desc: `${t("zeroDepDesc")} Minified + Gzipped: < ${gzSize} kB `,
   },
   {
     icon: "languages",
@@ -43,8 +45,11 @@ const features: FeatureItem[] = [
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       {
-        features.map((feature) => (
-          <div class="p-6 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs">
+        features.map((feature, index) => (
+          <div
+            class="animate-fade-in-up p-6 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs"
+            style={`animation-delay: ${index * 80}ms;`}
+          >
             <div class="w-8 h-8 rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-900 dark:text-white mb-4">
               <Icon name={feature.icon} class="w-4 h-4" />
             </div>
@@ -60,3 +65,29 @@ const features: FeatureItem[] = [
     </div>
   </div>
 </section>
+
+<style>
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: opacity, transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>

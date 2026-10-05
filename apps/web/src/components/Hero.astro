@@ -9,15 +9,13 @@ const t = useTranslations("hero");
 const lang = useLocale();
 ---
 
-<section class="relative py-6 sm:py-8 lg:py-10">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-    <div class="text-center mx-auto mb-6 sm:mb-8 lg:mb-10">
+<section class="relative py-10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    <div class="text-center mx-auto mb-10">
       <div
-        class="mb-3 sm:mb-3.5 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+        class="animate-fade-in-up mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
       >
-        <span
-          class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse"
-        ></span>
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         <span>{t("astroBadge")}</span>
         <span class="text-neutral-300 dark:text-neutral-700">|</span>
         <a
@@ -30,19 +28,19 @@ const lang = useLocale();
       </div>
 
       <h1
-        class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-neutral-950 dark:text-white leading-[1.15] mb-2 sm:mb-2.5"
+        class="animate-fade-in-up animation-delay-100 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-neutral-950 dark:text-white mb-4"
       >
         {t("title")}
       </h1>
 
       <p
-        class="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto"
+        class="animate-fade-in-up animation-delay-200 text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto leading-relaxed"
       >
         {t("badge")}
       </p>
 
       <div
-        class="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-3"
+        class="animate-fade-in-up animation-delay-300 mt-8 flex flex-wrap items-center justify-center gap-4"
       >
         <a
           href={`/${lang}/docs/overview-and-installation`}
@@ -54,18 +52,66 @@ const lang = useLocale();
           href={SITE_CONFIG.githubUrl}
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-md text-xs sm:text-sm font-medium text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-medium text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
         >
           <span>{t("github")}</span>
           <Icon name="external-link" class="w-3.5 h-3.5 text-neutral-400" />
         </a>
       </div>
 
-      <div class="mt-3.5 sm:mt-4 flex justify-center">
+      <div class="animate-fade-in-up animation-delay-400 mt-8 flex justify-center">
         <InstallTabs />
       </div>
     </div>
 
-    <Playground lang={lang} />
+    <div class="animate-fade-in-up animation-delay-500">
+      <Playground lang={lang} />
+    </div>
   </div>
 </section>
+
+<style>
+  @keyframes hero-fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: hero-fade-in-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: opacity, transform;
+  }
+
+  .animation-delay-100 {
+    animation-delay: 80ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 160ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 240ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 320ms;
+  }
+
+  .animation-delay-500 {
+    animation-delay: 420ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>
